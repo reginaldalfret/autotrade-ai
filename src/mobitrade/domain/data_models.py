@@ -19,11 +19,11 @@ class Timeframe(str, Enum):
         elif self == Timeframe.M15:
             return 15
         elif self == Timeframe.D1:
-            return 375 # Standard NSE trading day minutes (09:15 to 15:30)
+            return 375
         return 1
 
 class CandleTimestampSemantic(str, Enum):
-    INTERVAL_BEGINNING = "INTERVAL_BEGINNING" # e.g. FYERS: 09:15 candle covers 09:15:00 to 09:15:59
+    INTERVAL_BEGINNING = "INTERVAL_BEGINNING"
     INTERVAL_END = "INTERVAL_END"
 
 class DataStatus(str, Enum):
@@ -32,12 +32,13 @@ class DataStatus(str, Enum):
     MISSING = "MISSING"
     HALTED = "HALTED"
     ANOMALY = "ANOMALY"
+    INCOMPLETE = "INCOMPLETE"
 
 class Instrument(BaseModel):
     symbol: str
     exchange: str = "NSE"
-    segment: str = "EQUITY" # e.g. CM (Capital Market) / EQ
-    instrument_id: Optional[str] = None # e.g. NSE:RELIANCE-EQ
+    segment: str = "EQUITY"
+    instrument_id: Optional[str] = None
     isin: Optional[str] = None
     security_name: str
     trading_status: str = "ACTIVE"
@@ -60,8 +61,8 @@ class CorporateAction(BaseModel):
     symbol: str
     action_type: CorporateActionType
     ex_date: date
-    ratio_from: Optional[float] = None # e.g. 1
-    ratio_to: Optional[float] = None   # e.g. 2 for 1:2 split
+    ratio_from: Optional[float] = None
+    ratio_to: Optional[float] = None
     dividend_amount: Optional[float] = None
     old_symbol: Optional[str] = None
     new_symbol: Optional[str] = None
@@ -71,7 +72,7 @@ class HistoricalCandle(BaseModel):
     symbol: str
     exchange: str = "NSE"
     timeframe: Timeframe
-    timestamp: datetime # Timezone-aware Asia/Kolkata
+    timestamp: datetime
     open: float = Field(gt=0)
     high: float = Field(gt=0)
     low: float = Field(gt=0)
@@ -79,7 +80,7 @@ class HistoricalCandle(BaseModel):
     volume: float = Field(ge=0)
     status: DataStatus = DataStatus.VALID
     timestamp_semantic: CandleTimestampSemantic = CandleTimestampSemantic.INTERVAL_BEGINNING
-    is_adjusted: bool = False # Raw prices by default
+    is_adjusted: bool = False
 
     @model_validator(mode="after")
     def validate_ohlc(self):
@@ -91,17 +92,21 @@ class HistoricalCandle(BaseModel):
 
 class DatasetProvenance(BaseModel):
     dataset_id: str
+    source_provider: str
+    endpoint: str = "/history"
     symbol: str
     exchange: str = "NSE"
     timeframe: Timeframe
-    source_provider: str
-    source_version: str
+    requested_range_start: datetime
+    requested_range_end: datetime
+    actual_range_start: Optional[datetime] = None
+    actual_range_end: Optional[datetime] = None
     retrieval_timestamp: datetime
-    start_date: datetime
-    end_date: datetime
+    source_version: str = "1.0"
+    processing_version: str = "1.1.0"
+    calendar_version: str = "1.0.0"
     total_candles: int
     missing_intervals: int = 0
     duplicate_count: int = 0
     anomalies_count: int = 0
-    checksum_sha256: Optional[str] = None
-    processing_version: str = "1.0.0"
+    checksum_sha256: str

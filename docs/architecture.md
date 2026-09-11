@@ -4,7 +4,7 @@
 MobiTrade AI is built as a strictly decoupled, layered research platform:
 
 ```
-External Data / FYERS / Local Fixtures
+External Data / FYERS API v3 / Local Fixtures
                     │
                     ▼
            MarketDataProvider
@@ -13,22 +13,22 @@ External Data / FYERS / Local Fixtures
            Raw Data (data/raw/)
                     │
                     ▼
-       Data Quality Validation & Cleaning
+ Data Quality Validation (Missing intervals, Duplicates, Anomalies, Strict Incomplete Aggregation)
                     │
                     ▼
-    Timestamp Normalization (Asia/Kolkata)
+   Cryptographic SHA-256 Checksum Computation & Provenance Generation (data/metadata/)
                     │
                     ▼
-   Processed Columnar Storage (Parquet on D:)
+ Partition-Aware Columnar Storage (Parquet on D: by Year & Month)
                     │
                     ▼
-        Feature Engineering (Phase 3)
+        Feature Engineering Engine (Phase 3)
                     │
                     ▼
         Opportunity Scanner (Phase 4)
                     │
                     ▼
-        Market Snapshot -> 8 Local LLMs
+        Market Snapshot -> 8 Isolated Local LLMs
                     │
                     ▼
             Trade Decision
