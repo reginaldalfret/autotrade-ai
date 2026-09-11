@@ -2,6 +2,7 @@ import click
 from mobitrade.config.model_registry import ModelRegistry
 from mobitrade.config.settings import load_yaml_config
 from mobitrade.cli.data_commands import data_cli
+from mobitrade.cli.features_commands import features_cli
 
 @click.group()
 def cli():
@@ -9,6 +10,7 @@ def cli():
     pass
 
 cli.add_command(data_cli, name="data")
+cli.add_command(features_cli, name="features")
 
 @cli.command()
 def status():
