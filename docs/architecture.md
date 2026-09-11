@@ -3,32 +3,45 @@
 ## Overview
 MobiTrade AI is built as a strictly decoupled, layered research platform:
 
-`
-Market Data -> Feature Engine -> Opportunity Scanner -> Source Manager
-       │
-       ▼
-Market Snapshot -> 8 Local LLMs -> Structured Trade Decision
-                                            │
-                                            ▼
-                                       Risk Engine (Deterministic Limits: +10% target / -5% stop / max 20 trades)
-                                            │
-                                            ▼
-                                       Paper Broker (Slippage + Regulatory Transaction Costs)
-                                            │
-                                            ▼
-                                    Portfolio Manager (Daily Compounding)
-                                            │
-                                            ▼
-                                  Model Benchmark & Audit Logger
-                                            │
-                                            ▼
-                                      Daily PDF Reports
-`
-"@
-
-    "docs\development-roadmap.md" = @"
-# Development Roadmap
-
-- Phase 0: Environment validation & discovery (WSL2 Fedora, Python, GPU, Ollama, D: drive).
-- Phase 1: Project architecture, domain foundation, risk engine, paper broker, portfolio compounding, and test suite.
-- Phase 2-18: Real data ingestion, scanner, model execution, benchmark leaderboards, and PDF generation.
+```
+External Data / FYERS / Local Fixtures
+                    │
+                    ▼
+           MarketDataProvider
+                    │
+                    ▼
+           Raw Data (data/raw/)
+                    │
+                    ▼
+       Data Quality Validation & Cleaning
+                    │
+                    ▼
+    Timestamp Normalization (Asia/Kolkata)
+                    │
+                    ▼
+   Processed Columnar Storage (Parquet on D:)
+                    │
+                    ▼
+        Feature Engineering (Phase 3)
+                    │
+                    ▼
+        Opportunity Scanner (Phase 4)
+                    │
+                    ▼
+        Market Snapshot -> 8 Local LLMs
+                    │
+                    ▼
+            Trade Decision
+                    │
+                    ▼
+       Risk Engine (Deterministic Limits)
+                    │
+                    ▼
+       Paper Broker (Slippage + Costs)
+                    │
+                    ▼
+      Portfolio Manager (Compounding)
+                    │
+                    ▼
+        Audit Logger & PDF Reports
+```

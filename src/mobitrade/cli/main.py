@@ -1,21 +1,24 @@
 import click
 from mobitrade.config.model_registry import ModelRegistry
 from mobitrade.config.settings import load_yaml_config
+from mobitrade.cli.data_commands import data_cli
 
 @click.group()
 def cli():
     """MobiTrade AI - Autonomous Trading Research Platform"""
     pass
 
+cli.add_command(data_cli, name="data")
+
 @cli.command()
 def status():
-    """Display environment status and storage directories."""
+    """Display platform environment status."""
     click.echo("==================================================")
     click.echo("MobiTrade AI - Platform Status")
     click.echo("==================================================")
-    click.echo("Project Root: D:\\Trading LLM\\MobiTradeAI")
-    click.echo("WSL2 Mount:   /mnt/d/Trading LLM/MobiTradeAI")
-    click.echo("Storage Check: All artifacts restricted to D:")
+    click.echo("Project Root:   D:\\Trading LLM\\MobiTradeAI")
+    click.echo("WSL2 Mount:     /mnt/d/Trading LLM/MobiTradeAI")
+    click.echo("Storage Policy: D: preferred, E: allowed, C: strictly prohibited")
     click.echo("Execution Mode: LOCAL-FIRST PAPER TRADING ONLY")
 
 @cli.command()
