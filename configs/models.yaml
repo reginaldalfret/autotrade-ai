@@ -1,0 +1,76 @@
+version: "1.0.0"
+provider_default: "ollama"
+base_url: "http://localhost:11434"
+
+models:
+  - id: "nemotron"
+    display_name: "NVIDIA Nemotron 3 Nano"
+    runtime_model_name: "nemotron-3-nano:latest"
+    provider: "ollama"
+    enabled: true
+    temperature: 0.1
+    context_length: 4096
+    parameters: {}
+
+  - id: "qwen"
+    display_name: "Qwen 2.5 Coder 1.5B"
+    runtime_model_name: "qwen2.5-coder:1.5b"
+    provider: "ollama"
+    enabled: true
+    temperature: 0.1
+    context_length: 4096
+    parameters: {}
+
+  - id: "gemma"
+    display_name: "Google Gemma 3 1B"
+    runtime_model_name: "gemma3:1b"
+    provider: "ollama"
+    enabled: true
+    temperature: 0.1
+    context_length: 4096
+    parameters: {}
+
+  - id: "llama"
+    display_name: "Meta Llama 3.2 1B"
+    runtime_model_name: "llama3.2:1b"
+    provider: "ollama"
+    enabled: true
+    temperature: 0.1
+    context_length: 4096
+    parameters: {}
+
+  - id: "granite"
+    display_name: "IBM Granite 4 1B-H"
+    runtime_model_name: "granite4:1b-h"
+    provider: "ollama"
+    enabled: true
+    temperature: 0.1
+    context_length: 4096
+    parameters: {}
+
+  - id: "phi"
+    display_name: "Microsoft Phi-4 Mini"
+    runtime_model_name: "phi4-mini:latest"
+    provider: "ollama"
+    enabled: true
+    temperature: 0.1
+    context_length: 4096
+    parameters: {}
+
+  - id: "smollm"
+    display_name: "SmolLM2 1.7B"
+    runtime_model_name: "smollm2:1.7b"
+    provider: "ollama"
+    enabled: true
+    temperature: 0.1
+    context_length: 4096
+    parameters: {}
+
+  - id: "falcon"
+    display_name: "Falcon 3 1B"
+    runtime_model_name: "falcon3:1b-instruct-q4_K_M"
+    provider: "ollama"
+    enabled: true
+    temperature: 0.1
+    context_length: 4096
+    parameters: {}

@@ -1,0 +1,32 @@
+version: "1.0.0"
+environment: "development"
+base_dir: "/mnt/d/Trading LLM/MobiTradeAI"
+
+experiment:
+  experiment_id: "exp_001_initial_8model_eval"
+  description: "Initial 8-LLM Intraday Benchmark"
+  random_seed: 42
+  intraday_only: true
+  leverage_allowed: false
+  overnight_positions: false
+
+capital:
+  starting_capital_per_model: 1000.0
+  currency: "INR"
+
+risk:
+  daily_target_pct: 0.10      # +10% target shutdown
+  daily_max_loss_pct: 0.05    # -5% hard stop shutdown
+  max_trades_per_session: 20
+  max_positions_concurrent: 1
+  max_risk_per_trade_pct: 0.02
+  enforce_stop_loss: true
+
+session:
+  market: "indian_equity"
+  default_session_id: "session_001"
+
+storage:
+  database_path: "/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db"
+  reports_dir: "/mnt/d/Trading LLM/MobiTradeAI/reports"
+  logs_dir: "/mnt/d/Trading LLM/MobiTradeAI/logs"

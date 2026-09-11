@@ -1,0 +1,12 @@
+version: "1.0.0"
+
+costs:
+  indian_equity:
+    brokerage_pct: 0.0003 # 0.03% or flat Rs 20
+    brokerage_max_per_order: 20.0
+    stt_pct: 0.00025 # Intraday STT on sell side
+    exchange_txn_charge_pct: 0.0000345
+    gst_pct: 0.18 # 18% on (brokerage + txn charges)
+    sebi_turnover_pct: 0.000001
+    stamp_duty_pct: 0.00003 # Buy side only
+    slippage_pct: 0.0005 # 0.05% estimated slippage

@@ -1,0 +1,17 @@
+version: "1.0.0"
+
+markets:
+  indian_equity:
+    market_type: "EQUITY"
+    exchange: "NSE"
+    currency: "INR"
+    timezone: "Asia/Kolkata"
+    session_start: "09:15:00"
+    session_end: "15:30:00"
+    intraday_square_off: "15:15:00"
+    symbols:
+      - "RELIANCE"
+      - "TCS"
+      - "INFY"
+      - "HDFCBANK"
+      - "ICICIBANK"

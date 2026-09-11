@@ -1,0 +1,12 @@
+version: "1.0.0"
+
+rules:
+  daily_target_pct: 0.10
+  daily_loss_limit_pct: 0.05
+  max_trades_per_session: 20
+  max_concurrent_positions: 1
+  max_position_size_pct: 1.0 # Max fraction of total cash
+  require_stop_loss: true
+  min_confidence_score: 0.50
+  allow_overnight: false
+  allow_leverage: false

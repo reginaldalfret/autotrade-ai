@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mobitrade"
+version = "0.1.0"
+description = "Autonomous trading research and paper-trading platform for local LLM evaluation"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    { name = "MobiTrade AI Team" }
+]
+dependencies = [
+    "pydantic>=2.5.0",
+    "pyyaml>=6.0",
+    "click>=8.1.0",
+    "tabulate>=0.9.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+]
+
+[project.scripts]
+mobitrade = "mobitrade.cli.main:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
