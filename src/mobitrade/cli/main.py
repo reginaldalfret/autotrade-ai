@@ -4,6 +4,7 @@ from mobitrade.config.settings import load_yaml_config
 from mobitrade.cli.data_commands import data_cli
 from mobitrade.cli.features_commands import features_cli
 from mobitrade.cli.scanner_commands import scanner_cli
+from mobitrade.cli.external_commands import external_cli
 
 @click.group()
 def cli():
@@ -13,6 +14,7 @@ def cli():
 cli.add_command(data_cli, name="data")
 cli.add_command(features_cli, name="features")
 cli.add_command(scanner_cli, name="scanner")
+cli.add_command(external_cli, name="external")
 
 @cli.command()
 def status():

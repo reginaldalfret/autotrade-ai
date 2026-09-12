@@ -1,0 +1,34 @@
+external_information:
+  version: "1.0.0"
+  caching:
+    enabled: true
+    base_dir: "/mnt/d/Trading LLM/MobiTradeAI/data"
+    raw_subdir: "raw/external"
+    processed_subdir: "processed/external"
+    metadata_subdir: "metadata/external"
+
+  providers:
+    nse_announcements:
+      enabled: true
+      authority_rank: 1
+      max_results: 50
+      timeout_seconds: 10
+
+    financial_news:
+      enabled: true
+      authority_rank: 3
+      max_results: 30
+      timeout_seconds: 10
+
+    macro_regulatory:
+      enabled: true
+      authority_rank: 2
+      max_results: 20
+      timeout_seconds: 10
+
+  relevance:
+    default_min_level: "MEDIUM"
+    recency_window_hours: 48
+
+  database:
+    path: "/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db"

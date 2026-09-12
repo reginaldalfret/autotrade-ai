@@ -36,7 +36,15 @@ External Data / FYERS API v3 / Local Fixtures
           - SQLite persistence: database/mobitrade.db
                     │
                     ▼
-         Market Snapshot -> 8 Isolated Local LLMs
+         External Financial Information & Context Layer (Phase 5 - Implemented & Verified)
+          - Multi-provider ingestion: NSE Announcements, Financial News, Macro/RBI
+          - Publication vs Availability semantics (available_at <= decision_timestamp)
+          - Authority-aware deduplication & deterministic relevance ranking
+          - Cryptographic SHA-256 content hashing & provenance
+          - SQLite persistence & local filesystem caching
+                    │
+                    ▼
+         Standardized MarketSnapshot -> 8 Isolated Local LLMs (Phase 6)
                     │
                     ▼
             Trade Decision
