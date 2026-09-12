@@ -21,3 +21,7 @@
    - Detects missing candles, duplicate timestamps, and unexpected sessions without silently fabricating data.
 6. **Cryptographic Provenance**:
    - Real 64-character SHA-256 computed across all candle attributes.
+7. **Point-in-Time Scanner Consumption (Phase 4)**:
+   - Downstream scanner queries exclusively evaluate historical records satisfying `available_at <= decision_timestamp`.
+   - Incomplete / forming candles and future afternoon session spikes are strictly inaccessible at earlier decision times.
+   - Missing or anomalous data results in explicit machine-readable rejections (`INSUFFICIENT_HISTORY`, `DATA_ANOMALY`) rather than silent fabrication.

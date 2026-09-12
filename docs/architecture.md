@@ -28,10 +28,15 @@ External Data / FYERS API v3 / Local Fixtures
   - Timeframe-aware volatility annualization (1m: 375, 5m: 75, 15m: 25)
                     │
                     ▼
-        Opportunity Scanner (Phase 4)
+         Opportunity Scanner (Phase 4 - Implemented & Verified)
+          - Point-in-time scanning: available_at <= decision_timestamp
+          - Modular filters: Eligibility, Liquidity, Price, Data Quality
+          - Deterministic multi-factor scoring (Momentum, RelVol, Trend, Breakout, Volatility, Liquidity)
+          - Top-N ranking & tie-breaking
+          - SQLite persistence: database/mobitrade.db
                     │
                     ▼
-        Market Snapshot -> 8 Isolated Local LLMs
+         Market Snapshot -> 8 Isolated Local LLMs
                     │
                     ▼
             Trade Decision
