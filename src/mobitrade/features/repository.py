@@ -71,16 +71,25 @@ class ParquetFeatureRepository:
         return str(file_path)
 
     def load_features(
-        self, symbol: str, timeframe: Timeframe, exchange: str = "NSE"
+        self,
+        symbol: str,
+        timeframe: Timeframe,
+        exchange: str = "NSE",
+        feature_version: Optional[str] = None,
     ) -> List[TechnicalFeatures]:
         """
         Pure read operation: NEVER creates missing partition directories.
+        Optionally filters to a specific feature_version.
         """
         part_dir = self._get_partition_dir(exchange, symbol, timeframe, create=False)
         if not part_dir.exists():
             return []
 
-        parquet_files = list(part_dir.glob("*.parquet"))
+        if feature_version:
+            target_file = part_dir / f"features_{feature_version}.parquet"
+            parquet_files = [target_file] if target_file.exists() else []
+        else:
+            parquet_files = list(part_dir.glob("*.parquet"))
         if not parquet_files:
             return []
 

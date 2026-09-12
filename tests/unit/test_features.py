@@ -247,8 +247,12 @@ def test_timeframe_aware_volatility():
 # PHASE 3.2 REGRESSION TESTS: STORAGE IDEMPOTENCE & SCANNER GATE
 # ============================================================
 
-# Test 14 & 15: Incremental batch merge and duplicate prevention
-def test_feature_batch_merge_and_deduplication(tmp_path):
+# ============================================================
+# PHASE 3.2 REGRESSION TESTS: STORAGE IDEMPOTENCE & SCANNER GATE
+# ============================================================
+
+# Requirement 1: Feature batch merge
+def test_feature_batch_merge(tmp_path):
     repo = ParquetFeatureRepository(str(tmp_path))
     engine = QuantitativeFeatureEngine(version="1.1.0")
     
@@ -257,22 +261,33 @@ def test_feature_batch_merge_and_deduplication(tmp_path):
     feat_a = engine.calculate_features(candles_a)
     repo.save_features(feat_a)
     
-    # Save Batch A a second time (must not duplicate)
-    repo.save_features(feat_a)
-    loaded_1 = repo.load_features("TCS", Timeframe.M1)
-    assert len(loaded_1) == 2
-    
     # Batch B: candle at 09:17
     candles_b = create_candles([104.0], start_dt=datetime(2026, 9, 11, 9, 17, tzinfo=IST))
     feat_b = engine.calculate_features(candles_b)
     repo.save_features(feat_b)
     
     # Verify merged result: Batch A + Batch B both preserved and sorted
-    loaded_2 = repo.load_features("TCS", Timeframe.M1)
-    assert len(loaded_2) == 3
-    assert [f.price for f in loaded_2] == [100.0, 102.0, 104.0]
+    loaded = repo.load_features("TCS", Timeframe.M1)
+    assert len(loaded) == 3
+    assert [f.price for f in loaded] == [100.0, 102.0, 104.0]
+    assert loaded[0].candle_timestamp < loaded[1].candle_timestamp < loaded[2].candle_timestamp
 
-# Test 16: Feature version isolation
+# Requirement 2: Duplicate feature prevention
+def test_duplicate_feature_prevention(tmp_path):
+    repo = ParquetFeatureRepository(str(tmp_path))
+    engine = QuantitativeFeatureEngine(version="1.1.0")
+    
+    candles = create_candles([100.0, 102.0], start_dt=datetime(2026, 9, 11, 9, 15, tzinfo=IST))
+    feat = engine.calculate_features(candles)
+    
+    # Write Batch A twice
+    repo.save_features(feat)
+    repo.save_features(feat)
+    
+    loaded = repo.load_features("TCS", Timeframe.M1)
+    assert len(loaded) == 2  # Exactly 1 copy of each record preserved
+
+# Requirement 3: Feature version isolation
 def test_feature_version_isolation(tmp_path):
     repo = ParquetFeatureRepository(str(tmp_path))
     engine_v1 = QuantitativeFeatureEngine(version="1.1.0")
@@ -287,8 +302,15 @@ def test_feature_version_isolation(tmp_path):
     assert "features_1.1.0.parquet" in p1
     assert "features_1.2.0.parquet" in p2
     assert p1 != p2
+    
+    loaded_v1 = repo.load_features("TCS", Timeframe.M1, feature_version="1.1.0")
+    loaded_v2 = repo.load_features("TCS", Timeframe.M1, feature_version="1.2.0")
+    assert len(loaded_v1) == 2
+    assert len(loaded_v2) == 2
+    assert loaded_v1[0].feature_version == "1.1.0"
+    assert loaded_v2[0].feature_version == "1.2.0"
 
-# Test 17: Pure read does not create storage directories
+# Requirement 4: Read does not create directories
 def test_read_does_not_create_directories(tmp_path):
     repo = ParquetFeatureRepository(str(tmp_path))
     non_existent_symbol = "UNTRADED_SYM"
@@ -312,26 +334,49 @@ def test_read_does_not_create_directories(tmp_path):
     # Must STILL NOT exist after read operation
     assert not part_dir.exists()
 
-# Test 18: Scanner temporal safety contract at 09:17:30
-def test_scanner_temporal_safety_at_91730():
+# Requirement 5: Point-in-time scanner-safe snapshot
+def test_point_in_time_scanner_safe_snapshot():
     engine = QuantitativeFeatureEngine()
-    # Candles at 09:15, 09:16, 09:17
+    # Given candles: 09:15, 09:16, 09:17
     candles = create_candles([100.0, 102.0, 104.0], start_dt=datetime(2026, 9, 11, 9, 15, tzinfo=IST))
-    # Future afternoon spike at 14:00
-    future_candle = create_candles([500.0], start_dt=datetime(2026, 9, 11, 14, 0, tzinfo=IST))[0]
-    all_candles = candles + [future_candle]
     
+    # At decision time: 09:17:30
     decision_time = datetime(2026, 9, 11, 9, 17, 30, tzinfo=IST)
-    snapshot = engine.calculate_features_as_of(all_candles, decision_time)
+    snapshot = engine.calculate_features_as_of(candles, decision_time)
     
     assert snapshot is not None
-    # Must be the completed 09:16 candle (close=102.0), NOT forming 09:17 candle (104.0) or 14:00 spike (500.0)
+    # Must contain the completed 09:16 candle, NOT forming 09:17 candle
     assert snapshot.candle_timestamp == datetime(2026, 9, 11, 9, 16, tzinfo=IST)
     assert snapshot.feature_available_at == datetime(2026, 9, 11, 9, 17, tzinfo=IST)
     assert snapshot.price == 102.0
 
-# Test 19: Temporal ordering invariant enforcement
-def test_feature_temporal_ordering_validation():
+# Requirement 6: Future data cannot alter past snapshot
+def test_future_spike_cannot_alter_past_snapshot():
+    engine = QuantitativeFeatureEngine()
+    # Morning sequence: 09:15, 09:16, 09:17
+    morning_candles = create_candles([100.0, 102.0, 104.0], start_dt=datetime(2026, 9, 11, 9, 15, tzinfo=IST))
+    
+    # Baseline snapshot at 09:17:30 without future data
+    decision_time = datetime(2026, 9, 11, 9, 17, 30, tzinfo=IST)
+    snapshot_before = engine.calculate_features_as_of(morning_candles, decision_time)
+    
+    # Inject a 14:00 future price spike
+    future_spike = create_candles([500.0], start_dt=datetime(2026, 9, 11, 14, 0, tzinfo=IST))
+    all_candles = morning_candles + future_spike
+    
+    # Snapshot at 09:17:30 with future spike present in the candle feed
+    snapshot_after = engine.calculate_features_as_of(all_candles, decision_time)
+    
+    assert snapshot_before is not None
+    assert snapshot_after is not None
+    assert snapshot_before.price == snapshot_after.price == 102.0
+    assert snapshot_before.candle_timestamp == snapshot_after.candle_timestamp
+    assert snapshot_before.feature_available_at == snapshot_after.feature_available_at
+    assert snapshot_before.vwap == snapshot_after.vwap
+    assert snapshot_before.distance_from_session_high == snapshot_after.distance_from_session_high
+
+# Requirement 7: Feature availability ordering
+def test_feature_availability_ordering():
     ts = datetime(2026, 9, 11, 9, 15, tzinfo=IST)
     
     # Valid: available_at (09:16) >= candle_timestamp (09:15)

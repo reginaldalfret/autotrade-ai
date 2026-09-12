@@ -28,6 +28,7 @@ class QuantitativeFeatureEngine:
         source_dataset_id: Optional[str] = None
     ) -> Optional[TechnicalFeatures]:
         """
+        TEMPORAL-SAFE DECISION API (Opportunity Scanner / Decision Gate):
         Calculates the feature snapshot available strictly as of decision_timestamp.
         Excludes any forming/incomplete candle where candle.available_at > decision_timestamp.
         Returns the latest completed feature set up to decision_timestamp, or None if no completed candle exists.
@@ -50,6 +51,18 @@ class QuantitativeFeatureEngine:
         candles: List[HistoricalCandle],
         source_dataset_id: Optional[str] = None
     ) -> List[TechnicalFeatures]:
+        """
+        OFFLINE / BATCH CALCULATION PRIMITIVE:
+        Calculates a sequential time-series of features across the provided candles.
+
+        WARNING:
+        This is a batch/offline calculation primitive. Do NOT use this method directly
+        at decision time in the Opportunity Scanner or live execution loop without
+        pre-filtering completed candles (candle.available_at <= decision_time), as
+        including forming or future candles will introduce lookahead bias.
+        For simulated real-time decision making or scanning, ALWAYS call:
+            `calculate_features_as_of(candles, decision_timestamp)`
+        """
         if not candles:
             return []
 
