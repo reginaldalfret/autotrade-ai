@@ -1,7 +1,7 @@
 # 8-Model Local LLM Integration & Sequential Scheduler
 
 ## Overview
-MobiTrade AI integrates 8 small language models running locally on consumer-tier hardware (8 GB system RAM, NVIDIA GeForce RTX 2050 4 GB VRAM). To prevent memory exhaustion and VRAM overflow, the architecture implements a strict **Sequential Execution Scheduler**.
+AutoTrade AI integrates 8 small language models running locally on consumer-tier hardware (8 GB system RAM, NVIDIA GeForce RTX 2050 4 GB VRAM). To prevent memory exhaustion and VRAM overflow, the architecture implements a strict **Sequential Execution Scheduler**.
 
 Under this design:
 - Only **one** model resides in VRAM at any given time.

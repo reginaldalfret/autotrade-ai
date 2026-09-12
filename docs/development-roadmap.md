@@ -1,4 +1,4 @@
-# MobiTrade AI — Development Roadmap & Milestone Progress
+# AutoTrade AI — Development Roadmap & Milestone Progress
 
 ## Progress Tracker
 

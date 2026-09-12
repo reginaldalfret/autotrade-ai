@@ -7,7 +7,7 @@ from mobitrade.data.repository import ParquetDataRepository
 
 @click.group()
 def data_cli():
-    """MobiTrade AI - Market Data Management"""
+    """AutoTrade AI - Market Data Management"""
     pass
 
 @data_cli.command()
@@ -15,7 +15,7 @@ def status():
     """Display historical market data repository status."""
     repo = ParquetDataRepository()
     click.echo("==================================================")
-    click.echo("MobiTrade AI - Market Data Status")
+    click.echo("AutoTrade AI - Market Data Status")
     click.echo("==================================================")
     click.echo(f"Raw Storage:       {repo.raw_dir}")
     click.echo(f"Processed Parquet: {repo.processed_dir}")

@@ -2,7 +2,7 @@
 
 ## Permitted Storage Drives
 - **D: Drive (`/mnt/d`) [PRIMARY / DEFAULT]**:
-  - Preferred location for all MobiTrade AI code, configs, datasets, databases, logs, virtual environments, experiment results, and reports.
+  - Preferred location for all AutoTrade AI code, configs, datasets, databases, logs, virtual environments, experiment results, and reports.
   - Project root: `D:\Trading LLM\MobiTradeAI` (`/mnt/d/Trading LLM/MobiTradeAI`).
   - Python virtual environment: `/mnt/d/Trading LLM/MobiTradeAI/.venv`.
   - Database: `D:\Trading LLM\MobiTradeAI\database\mobitrade.db`.
@@ -16,5 +16,5 @@
 
 ## Strictly Prohibited Storage
 - **C: Drive**:
-  - Absolutely prohibited for MobiTrade persistent project storage.
+  - Absolutely prohibited for AutoTrade AI persistent project storage.
   - NO source code, virtual environments, datasets, databases, logs, reports, experiment results, model files, model caches, or application caches on `C:`.

@@ -9,7 +9,7 @@ from mobitrade.cli.llm_commands import llm_cli
 
 @click.group()
 def cli():
-    """MobiTrade AI - Autonomous Trading Research Platform"""
+    """AutoTrade AI - Autonomous Trading Research Platform"""
     pass
 
 cli.add_command(data_cli, name="data")
@@ -22,7 +22,7 @@ cli.add_command(llm_cli, name="llm")
 def status():
     """Display platform environment status."""
     click.echo("==================================================")
-    click.echo("MobiTrade AI - Platform Status")
+    click.echo("AutoTrade AI - Platform Status")
     click.echo("==================================================")
     click.echo("Project Root:   D:\\Trading LLM\\MobiTradeAI")
     click.echo("WSL2 Mount:     /mnt/d/Trading LLM/MobiTradeAI")

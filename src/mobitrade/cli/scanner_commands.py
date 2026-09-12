@@ -11,14 +11,14 @@ from mobitrade.config.settings import load_yaml_config
 
 @click.group(name="scanner")
 def scanner_cli():
-    """MobiTrade AI - Opportunity Scanner & Candidate Ranking CLI"""
+    """AutoTrade AI - Opportunity Scanner & Candidate Ranking CLI"""
     pass
 
 @scanner_cli.command(name="status")
 def scanner_status():
     """Display Opportunity Scanner engine status."""
     click.echo("==================================================")
-    click.echo("MobiTrade AI - Opportunity Scanner Status")
+    click.echo("AutoTrade AI - Opportunity Scanner Status")
     click.echo("==================================================")
     click.echo("Scanner Version:       1.0.0")
     click.echo("Market:                NSE Indian Equity Cash")
@@ -96,7 +96,7 @@ def scanner_scan(timestamp, timeframe, top_n, allow_outside_session):
     top_candidates = scanner.get_top_candidates(accepted, top_n)
 
     click.echo("==================================================")
-    click.echo("MobiTrade AI - Opportunity Scan Summary")
+    click.echo("AutoTrade AI - Opportunity Scan Summary")
     click.echo("==================================================")
     click.echo(f"Decision Timestamp:  {dt.isoformat()}")
     click.echo(f"Market:              NSE Indian Equity Cash")

@@ -1,7 +1,7 @@
 # Quantitative Feature Engineering & Temporal Availability (Hardened Phase 3.1)
 
 ## Temporal Availability Semantics
-Historical candles in MobiTrade AI are strictly `INTERVAL_BEGINNING`.
+Historical candles in AutoTrade AI are strictly `INTERVAL_BEGINNING`.
 - A 1-minute candle with timestamp `09:15:00` covers `09:15:00` to `09:15:59`. Its completed close and OHLCV statistics are only available at `09:16:00`.
 - A 5-minute candle with timestamp `09:15:00` covers `09:15:00` to `09:19:59`. Available at `09:20:00`.
 - A 15-minute candle with timestamp `09:15:00` covers `09:15:00` to `09:29:59`. Available at `09:30:00`.

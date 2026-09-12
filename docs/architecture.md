@@ -1,7 +1,7 @@
 # System Architecture
 
 ## Overview
-MobiTrade AI is built as a strictly decoupled, layered research platform:
+AutoTrade AI is built as a strictly decoupled, layered research platform:
 
 ```
 External Data / FYERS API v3 / Local Fixtures

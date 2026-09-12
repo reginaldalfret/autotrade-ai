@@ -14,14 +14,14 @@ from mobitrade.data.calendar import IST
 
 @click.group(name="llm")
 def llm_cli():
-    """MobiTrade AI - 8-Model Local LLM Integration & Scheduler CLI"""
+    """AutoTrade AI - 8-Model Local LLM Integration & Scheduler CLI"""
     pass
 
 @llm_cli.command(name="status")
 def llm_status():
     """Display Local LLM inference engine and scheduler status."""
     click.echo("==================================================")
-    click.echo("MobiTrade AI - 8-Model Local LLM Engine Status")
+    click.echo("AutoTrade AI - 8-Model Local LLM Engine Status")
     click.echo("==================================================")
     click.echo("Target Hardware:      8 GB RAM / NVIDIA RTX 2050 (4 GB VRAM)")
     click.echo("Scheduler Policy:     Sequential Execution (ONE model in VRAM at a time)")
@@ -116,7 +116,7 @@ def llm_evaluate_snapshot(snapshot):
     run = scheduler.evaluate_snapshot(snap, persist=True)
 
     click.echo("==================================================")
-    click.echo("MobiTrade AI - Sequential Evaluation Summary")
+    click.echo("AutoTrade AI - Sequential Evaluation Summary")
     click.echo("==================================================")
     click.echo(f"Run ID:              {run.run_id}")
     click.echo(f"Snapshot ID:         {run.snapshot_id}")

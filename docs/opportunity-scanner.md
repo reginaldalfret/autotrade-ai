@@ -1,4 +1,4 @@
-# MobiTrade AI — Opportunity Scanner & Candidate Ranking (Phase 4)
+# AutoTrade AI — Opportunity Scanner & Candidate Ranking (Phase 4)
 
 ## Overview
 The **Opportunity Scanner** is a deterministic, point-in-time candidate generation engine designed exclusively for the **NSE Indian Equity Cash Market**.

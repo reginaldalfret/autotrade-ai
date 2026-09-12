@@ -5,7 +5,7 @@ from mobitrade.features.repository import ParquetFeatureRepository
 
 @click.group()
 def features_cli():
-    """MobiTrade AI - Quantitative Feature Engine"""
+    """AutoTrade AI - Quantitative Feature Engine"""
     pass
 
 @features_cli.command()
@@ -13,7 +13,7 @@ def status():
     """Display feature storage status and supported indicators."""
     repo = ParquetFeatureRepository()
     click.echo("==================================================")
-    click.echo("MobiTrade AI - Quantitative Feature Engine Status")
+    click.echo("AutoTrade AI - Quantitative Feature Engine Status")
     click.echo("==================================================")
     click.echo(f"Features Parquet Storage: {repo.features_dir}")
     click.echo("Configured Moving Averages: SMA (5, 9, 20, 50), EMA (5, 9, 20, 50)")

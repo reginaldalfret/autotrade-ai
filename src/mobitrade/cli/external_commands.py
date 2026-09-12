@@ -12,14 +12,14 @@ from mobitrade.config.settings import load_yaml_config
 
 @click.group(name="external")
 def external_cli():
-    """MobiTrade AI - External Financial Information & Context CLI"""
+    """AutoTrade AI - External Financial Information & Context CLI"""
     pass
 
 @external_cli.command(name="status")
 def external_status():
     """Display external information layer status."""
     click.echo("==================================================")
-    click.echo("MobiTrade AI - External Financial Information Layer")
+    click.echo("AutoTrade AI - External Financial Information Layer")
     click.echo("==================================================")
     click.echo("Configured Providers:  NSE_ANNOUNCEMENTS (Rank 1: Official Disclosures)")
     click.echo("                       MACRO_REGULATORY  (Rank 2: RBI / SEBI Macro)")
@@ -122,7 +122,7 @@ def external_context(symbol, timestamp, limit):
     ctx = manager.get_context_as_of(symbol, dt, limit=limit)
 
     click.echo("==================================================")
-    click.echo("MobiTrade AI - Information Context Summary")
+    click.echo("AutoTrade AI - Information Context Summary")
     click.echo("==================================================")
     click.echo(f"Symbol:               {ctx.symbol}")
     click.echo(f"Decision Timestamp:   {ctx.decision_timestamp.isoformat()}")

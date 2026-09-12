@@ -1,6 +1,19 @@
-# MobiTrade AI
+# AutoTrade AI
 
-MobiTrade AI is a local-first autonomous trading research and paper-trading platform designed to evaluate multiple locally running LLMs as intraday trading decision agents.
+AutoTrade AI is a local-first AI trading research and paper trading platform for NSE Indian equities.
+
+Current experimental architecture:
+- 8 local LLMs
+- independent virtual accounts
+- ₹1,000 starting capital per model
+- identical market snapshots
+- sequential inference
+- deterministic risk engine
+- paper trading
+- transaction costs
+- slippage
+- daily compounding
+- complete trade/audit records
 
 ## Core Directives
 - **Storage**: All data, code, databases, environments, and reports strictly remain on drive `D:\Trading LLM\MobiTradeAI` (`/mnt/d/Trading LLM/MobiTradeAI`).

@@ -5,11 +5,11 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mobitrade"
 version = "0.1.0"
-description = "Autonomous trading research and paper-trading platform for local LLM evaluation"
+description = "AutoTrade AI - Autonomous trading research and paper-trading platform for local LLM evaluation"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [
-    { name = "MobiTrade AI Team" }
+    { name = "AutoTrade AI Team" }
 ]
 dependencies = [
     "pydantic>=2.5.0",

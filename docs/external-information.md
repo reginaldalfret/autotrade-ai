@@ -1,4 +1,4 @@
-# MobiTrade AI — External Financial Information & Point-in-Time Context Layer (Phase 5)
+# AutoTrade AI — External Financial Information & Point-in-Time Context Layer (Phase 5)
 
 ## Overview
 The **External Financial Information Layer** enriches quantitative scanner candidates with structured external financial information, official exchange disclosures, regulatory filings, corporate announcements, and macroeconomic releases.
