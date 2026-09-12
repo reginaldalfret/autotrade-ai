@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 from typing import Optional, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from mobitrade.domain.data_models import Timeframe, DataStatus
 
 class TrendClassification(str, Enum):
@@ -68,3 +68,13 @@ class TechnicalFeatures(BaseModel):
     # 6. Trend
     trend: TrendClassification = TrendClassification.NEUTRAL
     metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_temporal_ordering(self):
+        # Strict temporal invariant: feature_available_at cannot precede candle_timestamp
+        if self.feature_available_at < self.candle_timestamp:
+            raise ValueError(
+                f"Temporal violation: feature_available_at ({self.feature_available_at}) "
+                f"cannot be earlier than candle_timestamp ({self.candle_timestamp})"
+            )
+        return self

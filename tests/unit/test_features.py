@@ -1,5 +1,6 @@
 import pytest
 from datetime import datetime, date, timedelta
+from pathlib import Path
 import zoneinfo
 from mobitrade.domain.data_models import HistoricalCandle, Timeframe, DataStatus, CandleTimestampSemantic
 from mobitrade.domain.feature_models import TechnicalFeatures, TrendClassification
@@ -182,11 +183,7 @@ def test_trailing_stop_isolation_between_models_and_positions():
     assert state_b.peak_price == 200.0
     assert state_b.current_stop == 190.0
 
-# ============================================================
-# PHASE 3.1 HARDENING TESTS: TEMPORAL INTEGRITY & AVAILABILITY
-# ============================================================
-
-# Test 1, 2, 3, 4: Candle available_at semantics across 1m, 5m, 15m
+# 10. Candle available_at semantics across 1m, 5m, 15m
 def test_candle_available_at_timing():
     ts = datetime(2026, 9, 11, 9, 15, tzinfo=IST)
     
@@ -199,50 +196,38 @@ def test_candle_available_at_timing():
     c_15m = HistoricalCandle(symbol="TCS", timeframe=Timeframe.M15, timestamp=ts, open=100, high=105, low=98, close=102, volume=10)
     assert c_15m.available_at == datetime(2026, 9, 11, 9, 30, tzinfo=IST)
 
-# Test 5 & 6: Current forming candle exclusion & completed previous candle inclusion
+# 11. Current forming candle exclusion & completed previous candle inclusion
 def test_calculate_features_as_of_temporal_boundary():
     engine = QuantitativeFeatureEngine()
-    # 3 one-minute candles starting at 09:15:
-    # Candle 0: 09:15 (available_at 09:16)
-    # Candle 1: 09:16 (available_at 09:17)
-    # Candle 2: 09:17 (available_at 09:18)
     candles = create_candles([100.0, 102.0, 104.0], start_dt=datetime(2026, 9, 11, 9, 15, tzinfo=IST))
     
-    # At 09:15:30 -> Candle 0 (09:15) is STILL FORMING -> Must return None!
     snapshot_915_30 = engine.calculate_features_as_of(candles, datetime(2026, 9, 11, 9, 15, 30, tzinfo=IST))
     assert snapshot_915_30 is None
     
-    # At 09:16:00 -> Candle 0 is NOW COMPLETED -> Returns Candle 0 features
     snapshot_916 = engine.calculate_features_as_of(candles, datetime(2026, 9, 11, 9, 16, 0, tzinfo=IST))
     assert snapshot_916 is not None
     assert snapshot_916.candle_timestamp == datetime(2026, 9, 11, 9, 15, tzinfo=IST)
     assert snapshot_916.feature_available_at == datetime(2026, 9, 11, 9, 16, tzinfo=IST)
     assert snapshot_916.price == 100.0
     
-    # At 09:17:30 -> Candle 1 (09:16) is completed, but Candle 2 (09:17) is still forming
     snapshot_917_30 = engine.calculate_features_as_of(candles, datetime(2026, 9, 11, 9, 17, 30, tzinfo=IST))
     assert snapshot_917_30 is not None
-    assert snapshot_917_30.price == 102.0 # Candle 1 close (NOT Candle 2 close of 104.0)
+    assert snapshot_917_30.price == 102.0
 
-# Test 7, 8, 9: Future session statistics (high, low, VWAP) excluded
+# 12. Future session statistics leak prevention
 def test_future_session_stats_leak_prevention():
     engine = QuantitativeFeatureEngine()
     start_dt = datetime(2026, 9, 11, 9, 15, tzinfo=IST)
-    # Morning candles 09:15-09:19 prices around 100.0
     morning_candles = create_candles([100.0, 101.0, 102.0, 101.5, 102.0], start_dt=start_dt)
-    
-    # Afternoon candle at 14:00 with massive spike to 300.0
     afternoon_candle = create_candles([300.0], start_dt=datetime(2026, 9, 11, 14, 0, tzinfo=IST))[0]
     all_candles = morning_candles + [afternoon_candle]
     
-    # Query features at 09:20 (after 09:19 candle finishes)
     snap = engine.calculate_features_as_of(all_candles, datetime(2026, 9, 11, 9, 20, tzinfo=IST))
     assert snap is not None
-    # Distance from session high must be relative to morning peak (102.0 + 2.0 = 104.0), NOT afternoon 300.0!
     assert snap.distance_from_session_high < 10.0
     assert snap.vwap < 105.0
 
-# Test 11: Timeframe-aware realized volatility annualization
+# 13. Timeframe-aware volatility
 def test_timeframe_aware_volatility():
     engine = QuantitativeFeatureEngine()
     prices = [100.0 + (i % 3) for i in range(30)]
@@ -255,6 +240,120 @@ def test_timeframe_aware_volatility():
     feat_5m = engine.calculate_features(candles_5m)[-1]
     feat_15m = engine.calculate_features(candles_15m)[-1]
     
-    # Volatility should scale with sqrt(bars_per_session): 375 > 75 > 25
     assert feat_1m.volatility_20 > feat_5m.volatility_20
     assert feat_5m.volatility_20 > feat_15m.volatility_20
+
+# ============================================================
+# PHASE 3.2 REGRESSION TESTS: STORAGE IDEMPOTENCE & SCANNER GATE
+# ============================================================
+
+# Test 14 & 15: Incremental batch merge and duplicate prevention
+def test_feature_batch_merge_and_deduplication(tmp_path):
+    repo = ParquetFeatureRepository(str(tmp_path))
+    engine = QuantitativeFeatureEngine(version="1.1.0")
+    
+    # Batch A: candles at 09:15 and 09:16
+    candles_a = create_candles([100.0, 102.0], start_dt=datetime(2026, 9, 11, 9, 15, tzinfo=IST))
+    feat_a = engine.calculate_features(candles_a)
+    repo.save_features(feat_a)
+    
+    # Save Batch A a second time (must not duplicate)
+    repo.save_features(feat_a)
+    loaded_1 = repo.load_features("TCS", Timeframe.M1)
+    assert len(loaded_1) == 2
+    
+    # Batch B: candle at 09:17
+    candles_b = create_candles([104.0], start_dt=datetime(2026, 9, 11, 9, 17, tzinfo=IST))
+    feat_b = engine.calculate_features(candles_b)
+    repo.save_features(feat_b)
+    
+    # Verify merged result: Batch A + Batch B both preserved and sorted
+    loaded_2 = repo.load_features("TCS", Timeframe.M1)
+    assert len(loaded_2) == 3
+    assert [f.price for f in loaded_2] == [100.0, 102.0, 104.0]
+
+# Test 16: Feature version isolation
+def test_feature_version_isolation(tmp_path):
+    repo = ParquetFeatureRepository(str(tmp_path))
+    engine_v1 = QuantitativeFeatureEngine(version="1.1.0")
+    engine_v2 = QuantitativeFeatureEngine(version="1.2.0")
+    
+    candles = create_candles([100.0, 102.0])
+    feat_v1 = engine_v1.calculate_features(candles)
+    feat_v2 = engine_v2.calculate_features(candles)
+    
+    p1 = repo.save_features(feat_v1)
+    p2 = repo.save_features(feat_v2)
+    assert "features_1.1.0.parquet" in p1
+    assert "features_1.2.0.parquet" in p2
+    assert p1 != p2
+
+# Test 17: Pure read does not create storage directories
+def test_read_does_not_create_directories(tmp_path):
+    repo = ParquetFeatureRepository(str(tmp_path))
+    non_existent_symbol = "UNTRADED_SYM"
+    
+    # Partition directory must not exist
+    part_dir = (
+        Path(str(tmp_path))
+        / "processed"
+        / "market=indian_equity"
+        / "features"
+        / "exchange=NSE"
+        / f"symbol={non_existent_symbol}"
+        / "timeframe=1m"
+    )
+    assert not part_dir.exists()
+    
+    # Pure read query
+    loaded = repo.load_features(non_existent_symbol, Timeframe.M1)
+    assert loaded == []
+    
+    # Must STILL NOT exist after read operation
+    assert not part_dir.exists()
+
+# Test 18: Scanner temporal safety contract at 09:17:30
+def test_scanner_temporal_safety_at_91730():
+    engine = QuantitativeFeatureEngine()
+    # Candles at 09:15, 09:16, 09:17
+    candles = create_candles([100.0, 102.0, 104.0], start_dt=datetime(2026, 9, 11, 9, 15, tzinfo=IST))
+    # Future afternoon spike at 14:00
+    future_candle = create_candles([500.0], start_dt=datetime(2026, 9, 11, 14, 0, tzinfo=IST))[0]
+    all_candles = candles + [future_candle]
+    
+    decision_time = datetime(2026, 9, 11, 9, 17, 30, tzinfo=IST)
+    snapshot = engine.calculate_features_as_of(all_candles, decision_time)
+    
+    assert snapshot is not None
+    # Must be the completed 09:16 candle (close=102.0), NOT forming 09:17 candle (104.0) or 14:00 spike (500.0)
+    assert snapshot.candle_timestamp == datetime(2026, 9, 11, 9, 16, tzinfo=IST)
+    assert snapshot.feature_available_at == datetime(2026, 9, 11, 9, 17, tzinfo=IST)
+    assert snapshot.price == 102.0
+
+# Test 19: Temporal ordering invariant enforcement
+def test_feature_temporal_ordering_validation():
+    ts = datetime(2026, 9, 11, 9, 15, tzinfo=IST)
+    
+    # Valid: available_at (09:16) >= candle_timestamp (09:15)
+    valid_feat = TechnicalFeatures(
+        symbol="TCS",
+        exchange="NSE",
+        candle_timestamp=ts,
+        feature_available_at=ts + timedelta(minutes=1),
+        timeframe=Timeframe.M1,
+        price=100.0,
+        volume=1000.0
+    )
+    assert valid_feat.feature_available_at > valid_feat.candle_timestamp
+    
+    # Invalid: available_at before candle_timestamp -> Must raise ValueError
+    with pytest.raises(ValueError, match="Temporal violation"):
+        TechnicalFeatures(
+            symbol="TCS",
+            exchange="NSE",
+            candle_timestamp=ts,
+            feature_available_at=ts - timedelta(minutes=1), # Violation!
+            timeframe=Timeframe.M1,
+            price=100.0,
+            volume=1000.0
+        )

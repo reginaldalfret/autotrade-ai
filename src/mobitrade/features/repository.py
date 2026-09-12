@@ -12,20 +12,27 @@ class ParquetFeatureRepository:
     Columnar Parquet repository for computed TechnicalFeatures on D: drive.
     Partitioned as:
     data/processed/market=indian_equity/features/exchange={exchange}/symbol={symbol}/timeframe={timeframe}/
+    
+    Hardening:
+    - Pure reads NEVER create directories (no side-effects during query).
+    - Writes are idempotent: Incremental batches merge safely without data loss.
+    - Deterministic deduplication across identity key:
+      (symbol, exchange, timeframe, candle_timestamp, feature_version).
+    - Sorts strictly by candle_timestamp.
     """
     def __init__(self, base_data_dir: str = "/mnt/d/Trading LLM/MobiTradeAI/data"):
         self.base_dir = Path(base_data_dir)
         self.features_dir = self.base_dir / "processed" / "market=indian_equity" / "features"
-        self.features_dir.mkdir(parents=True, exist_ok=True)
 
-    def _get_partition_dir(self, exchange: str, symbol: str, timeframe: Timeframe) -> Path:
+    def _get_partition_dir(self, exchange: str, symbol: str, timeframe: Timeframe, create: bool = False) -> Path:
         path = (
             self.features_dir
             / f"exchange={exchange}"
             / f"symbol={symbol}"
             / f"timeframe={timeframe.value}"
         )
-        path.mkdir(parents=True, exist_ok=True)
+        if create:
+            path.mkdir(parents=True, exist_ok=True)
         return path
 
     def save_features(self, features: List[TechnicalFeatures]) -> str:
@@ -33,7 +40,8 @@ class ParquetFeatureRepository:
             return ""
 
         sample = features[0]
-        part_dir = self._get_partition_dir(sample.exchange, sample.symbol, sample.timeframe)
+        # Only create directories during explicit save/write
+        part_dir = self._get_partition_dir(sample.exchange, sample.symbol, sample.timeframe, create=True)
         file_path = part_dir / f"features_{sample.feature_version}.parquet"
 
         records = []
@@ -45,7 +53,19 @@ class ParquetFeatureRepository:
             d["metadata"] = json.dumps(d.get("metadata", {}))
             records.append(d)
 
-        df = pd.DataFrame(records)
+        new_df = pd.DataFrame(records)
+
+        # Merge with existing data if present (Idempotent incremental batch persistence)
+        if file_path.exists():
+            existing_df = pq.read_table(file_path).to_pandas()
+            combined_df = pd.concat([existing_df, new_df], ignore_index=True)
+            # Deduplicate by primary identity key
+            dedup_subset = ["symbol", "exchange", "timeframe", "candle_timestamp", "feature_version"]
+            combined_df = combined_df.drop_duplicates(subset=dedup_subset, keep="last")
+            df = combined_df.sort_values(by="candle_timestamp")
+        else:
+            df = new_df.sort_values(by="candle_timestamp")
+
         table = pa.Table.from_pandas(df)
         pq.write_table(table, file_path)
         return str(file_path)
@@ -53,7 +73,13 @@ class ParquetFeatureRepository:
     def load_features(
         self, symbol: str, timeframe: Timeframe, exchange: str = "NSE"
     ) -> List[TechnicalFeatures]:
-        part_dir = self._get_partition_dir(exchange, symbol, timeframe)
+        """
+        Pure read operation: NEVER creates missing partition directories.
+        """
+        part_dir = self._get_partition_dir(exchange, symbol, timeframe, create=False)
+        if not part_dir.exists():
+            return []
+
         parquet_files = list(part_dir.glob("*.parquet"))
         if not parquet_files:
             return []

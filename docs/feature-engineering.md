@@ -26,3 +26,9 @@ Every `TechnicalFeatures` record tracks:
 - `timeframe`: Active resolution.
 - `feature_version`: Versioned feature calculation logic (`1.1.0`).
 - `source_dataset_id`: Parent dataset provenance reference.
+- Model invariant enforcement: Pydantic rejects records where `feature_available_at < candle_timestamp`.
+
+## Storage Idempotence & Query Safety (Phase 3.2)
+- **Incremental Merging**: `ParquetFeatureRepository.save_features()` loads any existing partition data, merges incoming batches, sorts strictly by `candle_timestamp`, and deduplicates on `(symbol, exchange, timeframe, candle_timestamp, feature_version)`.
+- **Pure Reads**: `load_features(create=False)` performs side-effect-free queries and never creates empty partition folders for missing datasets.
+- **Scanner Temporal Gate**: Decision-making at $T$ evaluates only complete historical bars where `feature_available_at <= T`. At $09:17:30$, 1-minute bars through $09:16$ (available at $09:17:00$) are visible, while $09:17$ is still forming. For 5-minute bars, only bars through $09:10$ (available at $09:15:00$) are visible, preventing lookahead leakage.
