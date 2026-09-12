@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List, Dict, Optional
 from mobitrade.config.settings import ModelConfig, load_yaml_config
 
@@ -8,7 +9,18 @@ class ModelRegistry:
     """
     def __init__(self, config_path: Optional[str] = None):
         self._models: Dict[str, ModelConfig] = {}
-        if config_path:
+        if config_path is None:
+            candidates = [
+                Path("configs/models.yaml"),
+                Path(__file__).resolve().parent.parent.parent.parent / "configs" / "models.yaml",
+                Path("/mnt/d/Trading LLM/MobiTradeAI/configs/models.yaml"),
+                Path("D:/Trading LLM/MobiTradeAI/configs/models.yaml"),
+            ]
+            for cand in candidates:
+                if cand.exists():
+                    config_path = str(cand)
+                    break
+        if config_path and Path(config_path).exists():
             self.load_from_yaml(config_path)
 
     def load_from_yaml(self, config_path: str):

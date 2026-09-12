@@ -44,10 +44,11 @@ External Data / FYERS API v3 / Local Fixtures
           - SQLite persistence & local filesystem caching
                     │
                     ▼
-         Standardized MarketSnapshot -> 8 Isolated Local LLMs (Phase 6)
-                    │
-                    ▼
-            Trade Decision
+          Standardized MarketSnapshot -> 8 Isolated Local LLMs (Phase 6 - Implemented & Verified)
+           - Sequential LLMScheduler: One model in VRAM at a time (Load -> Infer -> Validate -> Record -> Unload)
+           - Frozen MarketSnapshot across all 8 models with frozen simulation time
+           - Strict JSON schema validation & fallback to HOLD
+           - Account isolation (₹1,000 per model) & comprehensive SQLite persistence
                     │
                     ▼
        Risk Engine (Deterministic Limits + Trailing Stop)
