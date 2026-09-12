@@ -42,7 +42,6 @@ class ParquetFeatureRepository:
             d["timeframe"] = f.timeframe.value
             d["data_status"] = f.data_status.value
             d["trend"] = f.trend.value
-            # Serialize metadata dict to JSON string to avoid empty struct pyarrow error
             d["metadata"] = json.dumps(d.get("metadata", {}))
             records.append(d)
 
@@ -60,7 +59,7 @@ class ParquetFeatureRepository:
             return []
 
         all_dfs = [pq.read_table(f).to_pandas() for f in parquet_files]
-        df = pd.concat(all_dfs, ignore_index=True).sort_values(by="timestamp")
+        df = pd.concat(all_dfs, ignore_index=True).sort_values(by="candle_timestamp")
 
         results = []
         for _, row in df.iterrows():

@@ -22,7 +22,10 @@ External Data / FYERS API v3 / Local Fixtures
  Partition-Aware Columnar Storage (Parquet on D: by Year & Month)
                     │
                     ▼
-        Feature Engineering Engine (Phase 3)
+ Feature Engineering Engine (Phase 3 & 3.1)
+  - Explicit available_at temporal availability
+  - Point-in-time snapshot API: calculate_features_as_of()
+  - Timeframe-aware volatility annualization (1m: 375, 5m: 75, 15m: 25)
                     │
                     ▼
         Opportunity Scanner (Phase 4)
@@ -34,7 +37,7 @@ External Data / FYERS API v3 / Local Fixtures
             Trade Decision
                     │
                     ▼
-       Risk Engine (Deterministic Limits)
+       Risk Engine (Deterministic Limits + Trailing Stop)
                     │
                     ▼
        Paper Broker (Slippage + Costs)

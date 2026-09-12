@@ -12,13 +12,14 @@ class TrendClassification(str, Enum):
 class TechnicalFeatures(BaseModel):
     symbol: str
     exchange: str = "NSE"
-    timestamp: datetime
+    candle_timestamp: datetime
+    feature_available_at: datetime
     timeframe: Timeframe
     data_status: DataStatus = DataStatus.VALID
-    feature_version: str = "1.0.0"
+    feature_version: str = "1.1.0"
     source_dataset_id: Optional[str] = None
-    
-    # Base Bar References
+
+    # Base Bar References (from last completed candle)
     price: float = Field(gt=0)
     volume: float = Field(ge=0)
 
@@ -62,7 +63,7 @@ class TechnicalFeatures(BaseModel):
     candle_range: float = 0.0
     upper_wick: float = 0.0
     lower_wick: float = 0.0
-    close_position_in_range: float = 0.5 # 0 (at low) to 1 (at high)
+    close_position_in_range: float = 0.5
 
     # 6. Trend
     trend: TrendClassification = TrendClassification.NEUTRAL

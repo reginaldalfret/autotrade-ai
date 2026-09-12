@@ -1,4 +1,4 @@
-# NSE-First Market Data & Trading Architecture (Hardened)
+# NSE-First Market Data & Trading Architecture (Phase 3.1 Hardened)
 
 ## Current Scope: Indian Equities (NSE First)
 - **Primary Exchange**: National Stock Exchange of India (NSE) - Equity / Capital Market (CM) segment.

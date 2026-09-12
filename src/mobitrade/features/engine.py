@@ -9,15 +9,41 @@ IST = zoneinfo.ZoneInfo("Asia/Kolkata")
 
 class QuantitativeFeatureEngine:
     """
-    Deterministic Quantitative Feature Calculator.
-    Calculates technical indicators strictly over complete historical candles available up to T.
-    Guarantees zero look-ahead bias:
-    - Never uses future candles, future session highs/lows, or future VWAP.
-    - Handles insufficient history explicitly (returns None rather than fake early values).
-    - Session-aware VWAP resets at the beginning of each trading day (09:15 IST).
+    Deterministic Quantitative Feature Calculator with Strict Temporal Integrity.
+    - Explicitly computes feature_available_at = candle_timestamp + timeframe_duration.
+    - Zero look-ahead: calculate_features_as_of() filters out any candle where available_at > decision_timestamp.
+    - Timeframe-aware realized volatility annualization:
+        Annual factor = sqrt(252 * bars_per_session)
+        1m  = 375 bars/session
+        5m  = 75 bars/session
+        15m = 25 bars/session
     """
-    def __init__(self, version: str = "1.0.0"):
+    def __init__(self, version: str = "1.1.0"):
         self.version = version
+
+    def calculate_features_as_of(
+        self,
+        candles: List[HistoricalCandle],
+        decision_timestamp: datetime,
+        source_dataset_id: Optional[str] = None
+    ) -> Optional[TechnicalFeatures]:
+        """
+        Calculates the feature snapshot available strictly as of decision_timestamp.
+        Excludes any forming/incomplete candle where candle.available_at > decision_timestamp.
+        Returns the latest completed feature set up to decision_timestamp, or None if no completed candle exists.
+        """
+        dec_ts = decision_timestamp.astimezone(IST) if decision_timestamp.tzinfo else decision_timestamp.replace(tzinfo=IST)
+        # Filter candles completed at or before decision_timestamp
+        eligible_candles = [
+            c for c in candles
+            if (c.available_at.astimezone(IST) if c.available_at.tzinfo else c.available_at.replace(tzinfo=IST)) <= dec_ts
+        ]
+        if not eligible_candles:
+            return None
+
+        # Compute full sequence over eligible candles and return the latest available
+        features = self.calculate_features(eligible_candles, source_dataset_id=source_dataset_id)
+        return features[-1] if features else None
 
     def calculate_features(
         self,
@@ -27,11 +53,9 @@ class QuantitativeFeatureEngine:
         if not candles:
             return []
 
-        # Sort chronologically
         sorted_candles = sorted(candles, key=lambda c: c.timestamp)
         features_list: List[TechnicalFeatures] = []
 
-        # Tracking state for session-aware VWAP and Session High/Low
         current_session_date: Optional[date] = None
         cum_pv = 0.0
         cum_volume = 0.0
@@ -40,9 +64,10 @@ class QuantitativeFeatureEngine:
 
         for i, candle in enumerate(sorted_candles):
             ts = candle.timestamp.astimezone(IST) if candle.timestamp.tzinfo else candle.timestamp.replace(tzinfo=IST)
+            avail_at = candle.available_at.astimezone(IST) if candle.available_at.tzinfo else candle.available_at.replace(tzinfo=IST)
             bar_date = ts.date()
 
-            # Session Reset for VWAP and Session High/Low
+            # Session Reset for VWAP and Session High/Low at day boundary
             if current_session_date != bar_date:
                 current_session_date = bar_date
                 cum_pv = 0.0
@@ -50,7 +75,6 @@ class QuantitativeFeatureEngine:
                 session_high = -math.inf
                 session_low = math.inf
 
-            # Typical price for bar
             typical_price = (candle.high + candle.low + candle.close) / 3.0
             cum_pv += typical_price * candle.volume
             cum_volume += candle.volume
@@ -59,7 +83,7 @@ class QuantitativeFeatureEngine:
             session_high = max(session_high, candle.high)
             session_low = min(session_low, candle.low)
 
-            # Historical slice up to and including current candle i (Point-in-time)
+            # Historical slice up to and including completed candle i (strictly point-in-time)
             history_slice = sorted_candles[:i + 1]
             closes = [c.close for c in history_slice]
             volumes = [c.volume for c in history_slice]
@@ -79,12 +103,12 @@ class QuantitativeFeatureEngine:
             rsi_14 = self._calculate_rsi(closes, 14)
             macd_line, macd_signal, macd_hist = self._calculate_macd(closes, 12, 26, 9)
             atr_14 = self._calculate_atr(history_slice, 14)
-            vol_20 = self._calculate_volatility(closes, 20)
+            vol_20 = self._calculate_volatility(closes, candle.timeframe, 20)
 
-            # 3. Relative Volume (comparing with past 20 bars)
+            # 3. Relative Volume
             rel_vol_20 = self._calculate_relative_volume(volumes, 20)
 
-            # 4. Momentum (Close differences)
+            # 4. Momentum
             mom_1 = (candle.close - closes[-2]) if len(closes) >= 2 else None
             mom_3 = (candle.close - closes[-4]) if len(closes) >= 4 else None
             mom_5 = (candle.close - closes[-6]) if len(closes) >= 6 else None
@@ -104,7 +128,7 @@ class QuantitativeFeatureEngine:
             lower_wick = min(candle.open, candle.close) - candle.low
             close_pos = ((candle.close - candle.low) / candle_range) if candle_range > 0 else 0.5
 
-            # 6. Trend Classification (BULLISH, BEARISH, NEUTRAL based on price vs EMA20 & SMA50)
+            # 6. Trend Classification
             trend = TrendClassification.NEUTRAL
             if ema_20 is not None and candle.close > ema_20:
                 if sma_50 is not None and candle.close > sma_50:
@@ -120,7 +144,8 @@ class QuantitativeFeatureEngine:
             feature = TechnicalFeatures(
                 symbol=candle.symbol,
                 exchange=candle.exchange,
-                timestamp=ts,
+                candle_timestamp=ts,
+                feature_available_at=avail_at,
                 timeframe=candle.timeframe,
                 data_status=candle.status,
                 feature_version=self.version,
@@ -173,7 +198,6 @@ class QuantitativeFeatureEngine:
         if len(data) < period:
             return None
         multiplier = 2.0 / (period + 1.0)
-        # Initial seed is SMA of first 'period' values
         ema = sum(data[:period]) / float(period)
         for val in data[period:]:
             ema = (val - ema) * multiplier + ema
@@ -182,13 +206,10 @@ class QuantitativeFeatureEngine:
     def _calculate_rsi(self, data: List[float], period: int = 14) -> Optional[float]:
         if len(data) <= period:
             return None
-
-        # Price changes
         changes = [data[i] - data[i - 1] for i in range(1, len(data))]
         if len(changes) < period:
             return None
 
-        # Wilder's smoothed RSI
         gains = [max(c, 0.0) for c in changes]
         losses = [max(-c, 0.0) for c in changes]
 
@@ -210,19 +231,15 @@ class QuantitativeFeatureEngine:
         if len(data) < slow_period + signal_period:
             return None, None, None
 
-        # Calculate fast & slow EMA series
         fast_mult = 2.0 / (fast_period + 1.0)
         slow_mult = 2.0 / (slow_period + 1.0)
 
-        # Seed slow EMA at slow_period
         slow_ema = sum(data[:slow_period]) / float(slow_period)
-        # Seed fast EMA at slow_period using values up to slow_period
         fast_ema = sum(data[:fast_period]) / float(fast_period)
         for val in data[fast_period:slow_period]:
             fast_ema = (val - fast_ema) * fast_mult + fast_ema
 
         macd_series = [fast_ema - slow_ema]
-
         for val in data[slow_period:]:
             fast_ema = (val - fast_ema) * fast_mult + fast_ema
             slow_ema = (val - slow_ema) * slow_mult + slow_ema
@@ -263,7 +280,16 @@ class QuantitativeFeatureEngine:
             atr = (atr * (period - 1) + tr) / float(period)
         return atr
 
-    def _calculate_volatility(self, closes: List[float], period: int = 20) -> Optional[float]:
+    def _calculate_volatility(
+        self, closes: List[float], timeframe: Timeframe, period: int = 20
+    ) -> Optional[float]:
+        """
+        Timeframe-aware realized volatility:
+        Annual factor = sqrt(252 trading days * bars_per_session)
+        1m: 375 bars -> sqrt(252 * 375)
+        5m: 75 bars  -> sqrt(252 * 75)
+        15m: 25 bars -> sqrt(252 * 25)
+        """
         if len(closes) < period + 1:
             return None
 
@@ -273,14 +299,14 @@ class QuantitativeFeatureEngine:
         ]
         mean = sum(returns) / float(period)
         variance = sum((r - mean) ** 2 for r in returns) / float(period - 1)
-        # Annualized volatility for intraday bars (assuming 252 days * 375 mins)
         daily_stdev = math.sqrt(variance)
-        return daily_stdev * math.sqrt(252 * 375)
+        annualization_factor = math.sqrt(252.0 * timeframe.intraday_bars_per_session)
+        return daily_stdev * annualization_factor
 
     def _calculate_relative_volume(self, volumes: List[float], period: int = 20) -> Optional[float]:
         if len(volumes) < period + 1:
             return None
-        # Mean of previous 'period' bars (excluding current bar)
+        # Mean of previous 20 completed bars (excluding current bar)
         reference_mean = sum(volumes[-(period + 1):-1]) / float(period)
         if reference_mean <= 0:
             return 1.0

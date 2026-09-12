@@ -1,4 +1,4 @@
-from datetime import datetime, date, time
+from datetime import datetime, date, time, timedelta
 from enum import Enum
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, model_validator
@@ -21,6 +21,25 @@ class Timeframe(str, Enum):
         elif self == Timeframe.D1:
             return 375
         return 1
+
+    @property
+    def intraday_bars_per_session(self) -> int:
+        """
+        Standard NSE cash market trading hours: 09:15 to 15:30 IST = 375 minutes.
+        1m  = 375 bars
+        5m  = 75 bars
+        15m = 25 bars
+        1d  = 1 bar
+        """
+        if self == Timeframe.M1:
+            return 375
+        elif self == Timeframe.M5:
+            return 75
+        elif self == Timeframe.M15:
+            return 25
+        elif self == Timeframe.D1:
+            return 1
+        return 375
 
 class CandleTimestampSemantic(str, Enum):
     INTERVAL_BEGINNING = "INTERVAL_BEGINNING"
@@ -81,6 +100,20 @@ class HistoricalCandle(BaseModel):
     status: DataStatus = DataStatus.VALID
     timestamp_semantic: CandleTimestampSemantic = CandleTimestampSemantic.INTERVAL_BEGINNING
     is_adjusted: bool = False
+
+    @property
+    def available_at(self) -> datetime:
+        """
+        Explicit temporal availability:
+        Since historical candles use INTERVAL_BEGINNING, the completed candle
+        close and final OHLCV values are only available after interval completion.
+        e.g. 1m candle at 09:15 is available_at 09:16:00.
+             5m candle at 09:15 is available_at 09:20:00.
+             15m candle at 09:15 is available_at 09:30:00.
+        """
+        if self.timestamp_semantic == CandleTimestampSemantic.INTERVAL_BEGINNING:
+            return self.timestamp + timedelta(minutes=self.timeframe.minutes)
+        return self.timestamp
 
     @model_validator(mode="after")
     def validate_ohlc(self):
