@@ -72,5 +72,23 @@ External Data / FYERS API v3 / Local Fixtures
         - SQLite trade journal, snapshots, performance leaderboard & audit events
                     │
                     ▼
-        Audit Logger & PDF Reports (Phase 8)
+        Tamper-Evident Cryptographic Audit Logging (Phase 8)
+         - Continuous SHA-256 hash chaining to Genesis Block
+         - Canonical JSON serialization with recursive sorting
+         - 27-event lifecycle coverage with strict zero-mutation policy
+         - Mathematical chain verification & tamper detection
+                    │
+                    ▼
+        Performance Analytics Engine & Tournament Leaderboard (Phase 8)
+         - Deterministic P&L, Return %, Win Rate, Profit Factor, Drawdown
+         - Statistically safe risk ratios (Sharpe, Sortino, Calmar)
+         - 5-tier tie-breaking tournament ranking hierarchy
+         - Strict multi-way mathematical ledger reconciliation
+                    │
+                    ▼
+        Automated Daily PDF Trading Report Generator (Phase 8)
+         - Multi-page institutional layout via ReportLab & Matplotlib
+         - Embedded disclaimers, leaderboard, model deep-dives, trade ledger
+         - Cryptographic PDF SHA-256 hashing & SQLite persistence
+         - Complete error isolation preserving trading session finalization
 ```

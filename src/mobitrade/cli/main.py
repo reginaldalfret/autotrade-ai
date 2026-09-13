@@ -7,6 +7,9 @@ from mobitrade.cli.scanner_commands import scanner_cli
 from mobitrade.cli.external_commands import external_cli
 from mobitrade.cli.llm_commands import llm_cli
 from mobitrade.cli.paper_commands import paper_cli
+from mobitrade.cli.audit_commands import audit_cli
+from mobitrade.cli.analytics_commands import analytics_cli
+from mobitrade.cli.report_commands import report_cli
 
 @click.group()
 def cli():
@@ -19,6 +22,9 @@ cli.add_command(scanner_cli, name="scanner")
 cli.add_command(external_cli, name="external")
 cli.add_command(llm_cli, name="llm")
 cli.add_command(paper_cli, name="paper")
+cli.add_command(audit_cli, name="audit")
+cli.add_command(analytics_cli, name="analytics")
+cli.add_command(report_cli, name="report")
 
 @cli.command()
 def status():

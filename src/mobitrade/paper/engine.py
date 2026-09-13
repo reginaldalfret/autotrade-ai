@@ -268,7 +268,11 @@ class PaperTradingEngine:
                     account.execute_shutdown_sequence()
                     closed = self.broker.close_all_positions(mid, current_prices, timestamp, ExitReason.DAILY_TARGET)
                     for t in closed:
-                        portfolio.update_with_execution(self.broker.executions[t.exit_execution_id])
+                        exit_exec = self.broker.executions[t.exit_execution_id]
+                        portfolio.update_with_execution(exit_exec)
+                        if exit_exec.order_id in self.broker.orders:
+                            self.persistence.save_order(self.broker.orders[exit_exec.order_id], session_id)
+                        self.persistence.save_fill(exit_exec)
                         self.session_trades[mid].append(t)
                         self.persistence.save_trade(t, session_id)
 
@@ -287,7 +291,11 @@ class PaperTradingEngine:
                     account.execute_shutdown_sequence()
                     closed = self.broker.close_all_positions(mid, current_prices, timestamp, ExitReason.DAILY_STOP)
                     for t in closed:
-                        portfolio.update_with_execution(self.broker.executions[t.exit_execution_id])
+                        exit_exec = self.broker.executions[t.exit_execution_id]
+                        portfolio.update_with_execution(exit_exec)
+                        if exit_exec.order_id in self.broker.orders:
+                            self.persistence.save_order(self.broker.orders[exit_exec.order_id], session_id)
+                        self.persistence.save_fill(exit_exec)
                         self.session_trades[mid].append(t)
                         self.persistence.save_trade(t, session_id)
 
@@ -363,7 +371,11 @@ class PaperTradingEngine:
 
             closed = self.broker.close_all_positions(mid, current_prices, timestamp, ExitReason.MARKET_CLOSE)
             for t in closed:
-                portfolio.update_with_execution(self.broker.executions[t.exit_execution_id])
+                exit_exec = self.broker.executions[t.exit_execution_id]
+                portfolio.update_with_execution(exit_exec)
+                if exit_exec.order_id in self.broker.orders:
+                    self.persistence.save_order(self.broker.orders[exit_exec.order_id], session_id)
+                self.persistence.save_fill(exit_exec)
                 self.session_trades[mid].append(t)
                 self.persistence.save_trade(t, session_id)
 
@@ -416,6 +428,20 @@ class PaperTradingEngine:
             leaderboard.append(perf)
 
         self.persistence.save_session_close(session_id)
+
+        # Automatic PDF daily report generation (resilient against trading interruption)
+        try:
+            from mobitrade.reporting.generator import DailyReportGenerator
+            generator = DailyReportGenerator(db_path=str(self.persistence.db_path))
+            generator.generate(session_id)
+        except Exception as e:
+            self.persistence.record_audit_event(
+                session_id=session_id,
+                model_id="SYSTEM",
+                event_type="REPORT_FAILED",
+                payload={"error": str(e)},
+                timestamp=datetime.now()
+            )
 
         # Sort leaderboard by Net P&L descending
         leaderboard.sort(key=lambda x: x["net_pnl"], reverse=True)

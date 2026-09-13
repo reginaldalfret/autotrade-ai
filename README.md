@@ -43,7 +43,40 @@ AutoTrade AI evaluates 8 open-weights local small language models (SLMs) in a co
 - **Dynamic Trailing Stop**: High-water mark ratcheting floor protects accumulated intraday gains without LLM interference.
 - **Daily Compounding**: At session close, realized Net P&L compounds into the next trading day's starting balance. Daily target (+10%) and stop loss (-5%) dynamically recalculate each morning.
 - **Zero-Trade Days Allowed**: Models proposing `HOLD` or failing risk checks preserve capital without penalty. Maximum 20 completed trades per session.
+- **Tamper-Evident Audit Trail**: Every event across session, model inference, risk checks, orders, fills, and compounding is cryptographically chained using SHA-256 to an immutable Genesis Block with zero-mutation guarantees.
+- **Performance Analytics Engine**: Deterministic calculations of Net P&L, Drawdowns, Win Rate, and safe Sharpe/Sortino/Calmar ratios with multi-way data reconciliation.
+- **Automated Daily PDF Reports**: Executive 8-page daily trading report with visual equity curves, leaderboard rankings, deep dives, complete trade ledgers, and SHA-256 validation badges.
 - **Deterministic Reproducibility**: All market data, features, candidate rankings, and paper-trading execution cycles maintain strict temporal integrity and cryptographic SHA-256 provenance.
+
+---
+
+## Command Line Interface (CLI)
+
+AutoTrade AI provides a unified CLI tool:
+
+```bash
+# Platform & Model Status
+mobitrade status
+mobitrade models
+
+# Performance Analytics & Leaderboard
+mobitrade analytics leaderboard
+mobitrade analytics daily
+mobitrade analytics model nemotron
+mobitrade analytics symbol
+mobitrade analytics reconcile <session_id>
+
+# Cryptographic Audit Log & Verification
+mobitrade audit status
+mobitrade audit verify
+mobitrade audit inspect <event_id>
+mobitrade audit session <session_id>
+mobitrade audit trade <trade_id>
+
+# Daily PDF Trading Reports
+mobitrade report generate --date 2026-09-11
+mobitrade report validate 2026-09-11
+```
 
 ---
 

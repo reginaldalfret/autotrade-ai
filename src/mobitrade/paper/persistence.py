@@ -9,17 +9,20 @@ from mobitrade.domain.account import Account
 from mobitrade.domain.trading import Order, Execution, Trade
 from mobitrade.domain.models import Position, PortfolioSnapshot
 from mobitrade.domain.enums import ExitReason
+from mobitrade.logging.audit import AuditLogger, AuditEventType
 
 class PaperDatabaseRepository:
     """
     SQLite persistence repository for Paper Trading & Portfolio Management.
     Stores accounts, daily sessions, orders, fills, positions, trades,
-    daily performance metrics, portfolio snapshots, and state-change audit events.
+    daily performance metrics, portfolio snapshots, state-change audit events,
+    and daily PDF reporting metadata.
     Database: database/mobitrade.db
     """
     def __init__(self, db_path: str = "/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db"):
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self.audit_logger = AuditLogger(db_path=str(self.db_path))
         self._init_db()
 
     def _get_connection(self) -> sqlite3.Connection:
@@ -165,13 +168,38 @@ class PaperDatabaseRepository:
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS audit_events (
                     event_id TEXT PRIMARY KEY,
+                    sequence_number INTEGER NOT NULL UNIQUE,
                     session_id TEXT NOT NULL,
-                    model_id TEXT NOT NULL,
+                    timestamp TEXT NOT NULL,
                     event_type TEXT NOT NULL,
+                    model_id TEXT,
+                    trade_id TEXT,
+                    order_id TEXT,
                     payload_json TEXT NOT NULL,
-                    timestamp TEXT NOT NULL
+                    previous_event_hash TEXT NOT NULL,
+                    event_hash TEXT NOT NULL
                 )
             """)
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_audit_seq ON audit_events (sequence_number)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_audit_session ON audit_events (session_id, sequence_number)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_audit_model ON audit_events (model_id)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_audit_type ON audit_events (event_type)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_audit_trade ON audit_events (trade_id)")
+
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS reports (
+                    report_id TEXT PRIMARY KEY,
+                    session_id TEXT NOT NULL,
+                    report_date TEXT NOT NULL,
+                    file_path TEXT NOT NULL,
+                    file_hash TEXT NOT NULL,
+                    generated_at TEXT NOT NULL,
+                    generation_status TEXT NOT NULL,
+                    error_message TEXT
+                )
+            """)
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_reports_session ON reports (session_id)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_reports_date ON reports (report_date)")
             conn.commit()
 
     def save_account(self, account: Account) -> None:
@@ -467,31 +495,94 @@ class PaperDatabaseRepository:
             cursor.execute("SELECT * FROM daily_performance WHERE session_id = ? ORDER BY net_pnl DESC", (session_id,))
             return [dict(r) for r in cursor.fetchall()]
 
-    def record_audit_event(self, session_id: str, model_id: str, event_type: str, payload: Dict[str, Any], timestamp: datetime) -> None:
+    def record_audit_event(
+        self,
+        session_id: str,
+        model_id: Optional[str],
+        event_type: str,
+        payload: Dict[str, Any],
+        timestamp: datetime,
+        trade_id: Optional[str] = None,
+        order_id: Optional[str] = None
+    ) -> None:
+        self.audit_logger.record_event(
+            session_id=session_id,
+            event_type=event_type,
+            payload=payload,
+            model_id=model_id,
+            trade_id=trade_id,
+            order_id=order_id,
+            timestamp=timestamp
+        )
+
+    def get_audit_events(self, session_id: str, model_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        events = self.audit_logger.get_events(session_id=session_id, model_id=model_id)
+        return [
+            {
+                "event_id": e.event_id,
+                "sequence_number": e.sequence_number,
+                "session_id": e.session_id,
+                "timestamp": e.timestamp,
+                "event_type": e.event_type,
+                "model_id": e.model_id,
+                "trade_id": e.trade_id,
+                "order_id": e.order_id,
+                "payload_json": json.dumps(e.payload),
+                "payload": e.payload,
+                "previous_event_hash": e.previous_event_hash,
+                "event_hash": e.event_hash
+            }
+            for e in events
+        ]
+
+    def save_report(
+        self,
+        report_id: str,
+        session_id: str,
+        report_date: str,
+        file_path: str,
+        file_hash: str,
+        generated_at: str,
+        generation_status: str = "SUCCESS",
+        error_message: Optional[str] = None
+    ) -> None:
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            event_id = f"evt_{uuid.uuid4().hex[:10]}"
             cursor.execute("""
-                INSERT INTO audit_events (
-                    event_id, session_id, model_id, event_type, payload_json, timestamp
-                ) VALUES (?, ?, ?, ?, ?, ?)
+                INSERT OR REPLACE INTO reports (
+                    report_id, session_id, report_date, file_path,
+                    file_hash, generated_at, generation_status, error_message
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, (
-                event_id,
+                report_id,
                 session_id,
-                model_id,
-                event_type,
-                json.dumps(payload),
-                timestamp.isoformat()
+                report_date,
+                file_path,
+                file_hash,
+                generated_at,
+                generation_status,
+                error_message
             ))
             conn.commit()
 
-    def get_audit_events(self, session_id: str, model_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_report(self, report_id: str) -> Optional[Dict[str, Any]]:
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            if model_id:
-                cursor.execute("SELECT * FROM audit_events WHERE session_id = ? AND model_id = ? ORDER BY timestamp ASC", (session_id, model_id))
-            else:
-                cursor.execute("SELECT * FROM audit_events WHERE session_id = ? ORDER BY timestamp ASC", (session_id,))
+            cursor.execute("SELECT * FROM reports WHERE report_id = ?", (report_id,))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+
+    def get_report_by_date(self, report_date: str) -> Optional[Dict[str, Any]]:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM reports WHERE report_date = ? ORDER BY generated_at DESC LIMIT 1", (report_date,))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+
+    def get_reports_for_session(self, session_id: str) -> List[Dict[str, Any]]:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM reports WHERE session_id = ? ORDER BY generated_at DESC", (session_id,))
             return [dict(r) for r in cursor.fetchall()]
 
     def save_portfolio_snapshot(self, snapshot: PortfolioSnapshot) -> None:
