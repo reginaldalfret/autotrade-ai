@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mobitrade"
 version = "0.1.0"
-description = "AutoTrade AI - Autonomous trading research and paper-trading platform for local LLM evaluation"
+description = "AutoTrade AI is a local-first AI trading research and paper trading platform for NSE Indian equities."
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [

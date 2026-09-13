@@ -71,6 +71,7 @@ class PaperTradingEngine:
         """
         Starts a new trading session across all 8 isolated model accounts.
         """
+        self.persistence.save_session_start(session_id, session_date, len(self.accounts))
         for mid, account in self.accounts.items():
             account.start_session()
             self.persistence.save_account(account)
@@ -413,6 +414,8 @@ class PaperTradingEngine:
                 timestamp=datetime.now()
             )
             leaderboard.append(perf)
+
+        self.persistence.save_session_close(session_id)
 
         # Sort leaderboard by Net P&L descending
         leaderboard.sort(key=lambda x: x["net_pnl"], reverse=True)

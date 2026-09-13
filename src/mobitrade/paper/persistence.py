@@ -224,6 +224,26 @@ class PaperDatabaseRepository:
             cursor.execute("SELECT * FROM accounts ORDER BY model_id ASC")
             return [dict(r) for r in cursor.fetchall()]
 
+    def save_session_start(self, session_id: str, session_date: str, models_count: int = 8) -> None:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            now_iso = datetime.now(timezone.utc).isoformat()
+            cursor.execute("""
+                INSERT OR REPLACE INTO daily_sessions (
+                    session_id, session_date, state, started_at, closed_at, models_count
+                ) VALUES (?, ?, 'ACTIVE', ?, NULL, ?)
+            """, (session_id, session_date, now_iso, models_count))
+            conn.commit()
+
+    def save_session_close(self, session_id: str) -> None:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            now_iso = datetime.now(timezone.utc).isoformat()
+            cursor.execute("""
+                UPDATE daily_sessions SET state = 'CLOSED', closed_at = ? WHERE session_id = ?
+            """, (now_iso, session_id))
+            conn.commit()
+
     def save_order(self, order: Order, session_id: str) -> None:
         with self._get_connection() as conn:
             cursor = conn.cursor()

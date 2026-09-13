@@ -5,27 +5,27 @@
 Phase 7 implements the deterministic simulated execution, multi-account portfolio management, and daily compounding engine for AutoTrade AI.
 
 In accordance with core architectural principles:
-- **Subordination Principle**: LLMs propose decisions; they **never** place broker orders directly. All orders must pass through the deterministic \RiskEngine\, be tracked by \PortfolioManager\, and be simulated via \PaperBroker\.
+- **Subordination Principle**: LLMs propose decisions; they **never** place broker orders directly. All orders must pass through the deterministic `RiskEngine`, be tracked by `PortfolioManager`, and be simulated via `PaperBroker`.
 - **Market Scope**: Strictly NSE Indian Equity Cash Market (Intraday only, 09:15–15:30 IST).
 - **Auto Square-Off**: Mandated 15:15 IST auto square-off for all open positions. Zero overnight positions permitted.
 - **Account Isolation**: 8 independent sub-accounts (₹1,000 starting balance each) corresponding to the 8 local LLMs.
-- **Realistic Statutory Costs**: Real-world Indian equity cash charges (Brokerage, STT, Exchange transaction charges, GST, SEBI turnover fees, Stamp duty) plus 0.05% slippage model.
+- **Configured Cost Model**: Configured Indian equity cash-market cost model (Brokerage, STT, Exchange transaction charges, GST, SEBI turnover fees, Stamp duty) plus 0.05% slippage model.
 - **Capital Compounding**: At 15:30 IST, each model's final realized equity compounds to become the next trading day's starting balance. Daily target (+10%) and stop loss (-5%) thresholds dynamically recalculate from the new starting balance.
 
 ---
 
 ## 8 Model Isolated Accounts
 
-| Model ID | Base LLM | Initial Capital | Daily Target (+10%) | Daily Stop (-5%) | Isolation Policy |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `nemotron` | Nemotron-Mini-4B | ₹1,000.00 | ₹1,100.00 | ₹950.00 | Strict per-model ledger |
-| `qwen` | Qwen2.5-Coder-7B | ₹1,000.00 | ₹1,100.00 | ₹950.00 | Strict per-model ledger |
-| `gemma` | Gemma-2-9B | ₹1,000.00 | ₹1,100.00 | ₹950.00 | Strict per-model ledger |
-| `llama` | Llama-3.2-3B | ₹1,000.00 | ₹1,100.00 | ₹950.00 | Strict per-model ledger |
-| `granite` | Granite-3.0-8B | ₹1,000.00 | ₹1,100.00 | ₹950.00 | Strict per-model ledger |
-| `phi` | Phi-3.5-mini | ₹1,000.00 | ₹1,100.00 | ₹950.00 | Strict per-model ledger |
-| `smollm` | SmolLM2-1.7B | ₹1,000.00 | ₹1,100.00 | ₹950.00 | Strict per-model ledger |
-| `falcon` | Falcon3-7B | ₹1,000.00 | ₹1,100.00 | ₹950.00 | Strict per-model ledger |
+| Model ID | Display Name | Runtime Model Name | Initial Capital | Daily Target (+10%) | Daily Stop (-5%) | Isolation Policy |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `nemotron` | NVIDIA Nemotron 3 Nano | `nemotron-3-nano:latest` | ₹1,000.00 | ₹1,100.00 | ₹950.00 | Strict per-model ledger |
+| `qwen` | Qwen 2.5 Coder 1.5B | `qwen2.5-coder:1.5b` | ₹1,000.00 | ₹1,100.00 | ₹950.00 | Strict per-model ledger |
+| `gemma` | Google Gemma 3 1B | `gemma3:1b` | ₹1,000.00 | ₹1,100.00 | ₹950.00 | Strict per-model ledger |
+| `llama` | Meta Llama 3.2 1B | `llama3.2:1b` | ₹1,000.00 | ₹1,100.00 | ₹950.00 | Strict per-model ledger |
+| `granite` | IBM Granite 4 1B-H | `granite4:1b-h` | ₹1,000.00 | ₹1,100.00 | ₹950.00 | Strict per-model ledger |
+| `phi` | Microsoft Phi-4 Mini | `phi4-mini:latest` | ₹1,000.00 | ₹1,100.00 | ₹950.00 | Strict per-model ledger |
+| `smollm` | SmolLM2 1.7B | `smollm2:1.7b` | ₹1,000.00 | ₹1,100.00 | ₹950.00 | Strict per-model ledger |
+| `falcon` | Falcon 3 1B | `falcon3:1b-instruct-q4_K_M` | ₹1,000.00 | ₹1,100.00 | ₹950.00 | Strict per-model ledger |
 
 Each model account possesses its own:
 1. `Account` domain object with independent `cash`, `starting_balance`, `state`, and thresholds.
@@ -34,9 +34,9 @@ Each model account possesses its own:
 
 ---
 
-## Indian Equity Statutory Cost Structure
+## Indian Equity Cost Structure
 
-All simulated executions incorporate authentic statutory charges defined in `configs/costs.yaml`:
+All simulated executions incorporate the configured Indian equity cash-market cost model defined in `configs/costs.yaml`:
 
 ```yaml
 brokerage:
@@ -145,4 +145,65 @@ mobitrade paper performance
 
 # Run deterministic end-to-end paper trading replay
 mobitrade paper simulate --date 2026-09-11 --symbol TATAMOTORS
+```
+
+---
+
+## Example / Demo Replay Walkthrough (2026-09-11)
+
+Below is an illustrative walkthrough of the deterministic paper-trading replay execution and daily compounding for session date **2026-09-11**:
+
+```text
+==================================================
+AutoTrade AI - Paper Trading Daily Replay: 2026-09-11
+Session ID: sim_20260911 | Symbol: TATAMOTORS
+==================================================
+
+[10:15 IST] Frozen Snapshot Dispatched -> Sequential Evaluation of 8 Models...
+ - nemotron  : BUY APPROVED -> Filled 2 shares @ ₹500.25
+ - qwen      : BUY APPROVED -> Filled 2 shares @ ₹500.25
+ - gemma     : HOLD -> No trade
+ - llama     : BUY APPROVED -> Filled 2 shares @ ₹500.25
+ - granite   : HOLD -> No trade
+ - phi       : BUY APPROVED -> Filled 2 shares @ ₹500.25
+ - smollm    : HOLD -> No trade
+ - falcon    : HOLD -> No trade
+
+[13:00 IST] Mid-Session Tick: TATAMOTORS at ₹510.0 (Mark-to-market & trailing stops updated)
+
+[15:15 IST] Auto Square-Off Window Triggered -> Closing all in-flight positions...
+
+[15:30 IST] Session Closed -> Finalizing performance & compounding to next day...
+
+==================================================
+AutoTrade AI - Daily Replay Summary (2026-09-11):
+==================================================
+|   Rank | Model ID   | Start Eq   | End Eq   | Gross P&L   | Costs   | Net P&L   | Return %   | New Day Balance   |
+|--------|------------|------------|----------|-------------|---------|-----------|------------|-------------------|
+|      1 | nemotron   | ₹1000.00   | ₹1037.88 | ₹38.98      | ₹2.12   | ₹36.86    | +3.79%     | ₹1037.88          |
+|      2 | qwen       | ₹1000.00   | ₹1037.88 | ₹38.98      | ₹2.12   | ₹36.86    | +3.79%     | ₹1037.88          |
+|      3 | llama      | ₹1000.00   | ₹1037.88 | ₹38.98      | ₹2.12   | ₹36.86    | +3.79%     | ₹1037.88          |
+|      4 | phi        | ₹1000.00   | ₹1037.88 | ₹38.98      | ₹2.12   | ₹36.86    | +3.79%     | ₹1037.88          |
+|      5 | gemma      | ₹1000.00   | ₹1000.00 | ₹0.00       | ₹0.00   | ₹0.00     | +0.00%     | ₹1000.00          |
+|      6 | granite    | ₹1000.00   | ₹1000.00 | ₹0.00       | ₹0.00   | ₹0.00     | +0.00%     | ₹1000.00          |
+|      7 | smollm     | ₹1000.00   | ₹1000.00 | ₹0.00       | ₹0.00   | ₹0.00     | +0.00%     | ₹1000.00          |
+|      8 | falcon     | ₹1000.00   | ₹1000.00 | ₹0.00       | ₹0.00   | ₹0.00     | +0.00%     | ₹1000.00          |
+```
+
+### Daily Leaderboard Output (2026-09-11)
+
+```text
+==================================================
+AutoTrade AI - Daily Model Leaderboard (2026-09-11)
+==================================================
+| Date       | Model ID   | Starting Eq   | Ending Eq   | Net P&L   | Return %   |   Trades | Win Rate   | Max DD   |
+|------------|------------|---------------|-------------|-----------|------------|----------|------------|----------|
+| 2026-09-11 | falcon     | ₹1000.00      | ₹1000.00    | ₹0.00     | +0.00%     |        0 | 0.0%       | 0.00%    |
+| 2026-09-11 | smollm     | ₹1000.00      | ₹1000.00    | ₹0.00     | +0.00%     |        0 | 0.0%       | 0.00%    |
+| 2026-09-11 | phi        | ₹1000.00      | ₹1037.88    | ₹36.86    | +3.79%     |        1 | 100.0%     | 0.00%    |
+| 2026-09-11 | granite    | ₹1000.00      | ₹1000.00    | ₹0.00     | +0.00%     |        0 | 0.0%       | 0.00%    |
+| 2026-09-11 | llama      | ₹1000.00      | ₹1037.88    | ₹36.86    | +3.79%     |        1 | 100.0%     | 0.00%    |
+| 2026-09-11 | gemma      | ₹1000.00      | ₹1000.00    | ₹0.00     | +0.00%     |        0 | 0.0%       | 0.00%    |
+| 2026-09-11 | qwen       | ₹1000.00      | ₹1037.88    | ₹36.86    | +3.79%     |        1 | 100.0%     | 0.00%    |
+| 2026-09-11 | nemotron   | ₹1000.00      | ₹1037.88    | ₹36.86    | +3.79%     |        1 | 100.0%     | 0.00%    |
 ```

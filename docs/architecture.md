@@ -59,7 +59,7 @@ External Data / FYERS API v3 / Local Fixtures
                     │
                     ▼
        Paper Broker & Execution Simulation (Phase 7)
-        - Authentic Indian equity cash cost schedule (Brokerage, STT, Turn, GST, SEBI, Stamp)
+        - Configured Indian equity cash-market cost model (Brokerage, STT, Turn, GST, SEBI, Stamp)
         - 0.05% slippage model
         - Dynamic trailing-stop ratchet & execution
         - 8 isolated sub-account trade execution slots

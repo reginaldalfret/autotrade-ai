@@ -1,22 +1,37 @@
+# Environments & Secrets
+.venv/
+env/
+venv/
+.env
+.env.*
+!.env.example
+
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
-.venv/
-env/
+*.pyc
 build/
 dist/
 *.egg-info/
 
-# Testing & Coverage
+# Testing & Coverage & Linter
 .pytest_cache/
 .coverage
 htmlcov/
+.mypy_cache/
+.ruff_cache/
 
 # Logs & Databases
-logs/*.log
+logs/
+*.log
 database/*.db
+database/*.sqlite
 database/*.sqlite3
+
+# Reports & Outputs
+reports/
+*.pdf
 
 # Data Caches & Storage
 data/cache/*
@@ -27,7 +42,22 @@ data/processed/*
 !data/processed/.gitkeep
 data/metadata/*
 !data/metadata/.gitkeep
+data/experiments/*
+!data/experiments/.gitkeep
 
-# OS Artifacts
+# Large Models & Binary Weights
+*.bin
+*.pt
+*.pth
+*.onnx
+*.gguf
+*.safetensors
+
+# OS & Editor Artifacts
 .DS_Store
 Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
