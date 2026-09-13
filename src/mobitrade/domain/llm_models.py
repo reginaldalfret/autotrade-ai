@@ -11,6 +11,7 @@ class LLMAction(str, Enum):
 
 class ValidationStatus(str, Enum):
     VALID = "VALID"
+    INVALID = "INVALID"
     INVALID_FORMAT = "INVALID_FORMAT"
     INVALID_ACTION = "INVALID_ACTION"
     INVALID_PRICE = "INVALID_PRICE"

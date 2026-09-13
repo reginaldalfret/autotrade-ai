@@ -109,3 +109,53 @@ class PortfolioManager:
             daily_pnl=self.daily_pnl,
             completed_trades_count=self.completed_trades_count
         )
+
+    def calculate_daily_performance(self, trades: Optional[List[Trade]] = None) -> Dict[str, Any]:
+        """
+        Calculates comprehensive auditable daily performance metrics.
+        All rankings and compounding are strictly based on NET P&L.
+        """
+        model_trades = trades or []
+        winning_trades = [t for t in model_trades if t.net_pnl > 0]
+        losing_trades = [t for t in model_trades if t.net_pnl < 0]
+
+        total_wins = sum(t.net_pnl for t in winning_trades)
+        total_losses = abs(sum(t.net_pnl for t in losing_trades))
+
+        if total_losses > 0:
+            profit_factor = total_wins / total_losses
+        elif total_wins > 0:
+            profit_factor = float("inf")
+        else:
+            profit_factor = 0.0
+
+        win_rate = (len(winning_trades) / len(model_trades) * 100.0) if model_trades else 0.0
+        avg_win = (total_wins / len(winning_trades)) if winning_trades else 0.0
+        avg_loss = (sum(t.net_pnl for t in losing_trades) / len(losing_trades)) if losing_trades else 0.0
+        largest_win = max([t.net_pnl for t in model_trades], default=0.0)
+        largest_loss = min([t.net_pnl for t in model_trades], default=0.0)
+        gross_pnl = sum(t.gross_pnl for t in model_trades)
+        net_pnl = sum(t.net_pnl for t in model_trades)
+
+        return {
+            "model_id": self.model_id,
+            "starting_balance": self.starting_day_balance,
+            "ending_balance": self.total_equity,
+            "gross_pnl": gross_pnl,
+            "net_pnl": net_pnl,
+            "daily_pnl": self.daily_pnl,
+            "return_pct": (self.daily_pnl / self.starting_day_balance * 100.0) if self.starting_day_balance > 0 else 0.0,
+            "total_fees": self.total_fees,
+            "total_slippage": self.total_slippage,
+            "trades_count": len(model_trades),
+            "winning_trades_count": len(winning_trades),
+            "losing_trades_count": len(losing_trades),
+            "win_rate": win_rate,
+            "average_winning_trade": avg_win,
+            "average_losing_trade": avg_loss,
+            "largest_win": largest_win,
+            "largest_loss": largest_loss,
+            "profit_factor": profit_factor,
+            "max_drawdown": 0.0
+        }
+

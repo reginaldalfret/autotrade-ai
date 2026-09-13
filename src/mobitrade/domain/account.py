@@ -8,8 +8,16 @@ class Account:
     Manages isolated account state for a specific model within a trading session.
     Strictly follows the state transition rules and guarantees the order shutdown sequence.
     """
-    def __init__(self, model_id: str, starting_balance: float, target_pct: float = 0.10, loss_limit_pct: float = 0.05):
+    def __init__(
+        self,
+        model_id: str,
+        starting_balance: float,
+        target_pct: float = 0.10,
+        loss_limit_pct: float = 0.05,
+        account_id: Optional[str] = None
+    ):
         self.model_id = model_id
+        self.account_id = account_id or f"acc_{model_id}"
         self.starting_balance = starting_balance
         self.cash = starting_balance
         self.target_pct = target_pct
@@ -25,6 +33,7 @@ class Account:
         self.target_reached: bool = False
         self.daily_stop_triggered: bool = False
         self.market_closed_triggered: bool = False
+        self.square_off_triggered: bool = False
         self.lock_reason: Optional[str] = None
 
     @property
@@ -74,3 +83,31 @@ class Account:
                 order.status = OrderStatus.CANCELLED
         self.pending_orders.clear()
         self.state = AccountState.LOCKED
+
+    def trigger_square_off(self):
+        """
+        Initiates 15:15 IST intraday auto square-off.
+        Disables new entry orders while allowing closing orders.
+        """
+        self.square_off_triggered = True
+        self.lock_reason = "15:15 IST auto square-off triggered"
+
+    def compound_to_next_session(self, new_starting_balance: float):
+        """
+        Compounds realized equity into the next session's starting balance.
+        Dynamically recalculates the +10% target and -5% stop loss benchmarks
+        from the new starting balance.
+        """
+        self.starting_balance = new_starting_balance
+        self.cash = new_starting_balance
+        self.daily_target_equity = new_starting_balance * (1.0 + self.target_pct)
+        self.daily_stop_equity = new_starting_balance * (1.0 - self.loss_limit_pct)
+        self.completed_trades.clear()
+        self.pending_orders.clear()
+        self.target_reached = False
+        self.daily_stop_triggered = False
+        self.market_closed_triggered = False
+        self.square_off_triggered = False
+        self.lock_reason = None
+        self.state = AccountState.READY
+

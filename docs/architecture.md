@@ -51,14 +51,26 @@ External Data / FYERS API v3 / Local Fixtures
            - Account isolation (₹1,000 per model) & comprehensive SQLite persistence
                     │
                     ▼
-       Risk Engine (Deterministic Limits + Trailing Stop)
+       Deterministic Risk Engine (Phase 7 - Subordination Authority)
+        - Pre-trade validation & position sizing based on available cash
+        - Session thresholds: +10% Daily Target / -5% Hard Stop
+        - 15:15 IST entry cutoff & mandatory auto square-off
+        - Max 20 completed trades limit
                     │
                     ▼
-       Paper Broker (Slippage + Costs)
+       Paper Broker & Execution Simulation (Phase 7)
+        - Authentic Indian equity cash cost schedule (Brokerage, STT, Turn, GST, SEBI, Stamp)
+        - 0.05% slippage model
+        - Dynamic trailing-stop ratchet & execution
+        - 8 isolated sub-account trade execution slots
                     │
                     ▼
-      Portfolio Manager (Compounding)
+       Portfolio Manager & Compounding Engine (Phase 7)
+        - 8 independent model ledgers (₹1,000 initial capital per model)
+        - Real-time mark-to-market and Gross vs Net P&L attribution
+        - Daily realized equity compounding: starting_balance(D+1) = ending_equity(D)
+        - SQLite trade journal, snapshots, performance leaderboard & audit events
                     │
                     ▼
-        Audit Logger & PDF Reports
+        Audit Logger & PDF Reports (Phase 8)
 ```

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field, model_validator
-from mobitrade.domain.enums import Action, OrderSide, OrderType, OrderStatus
+from mobitrade.domain.enums import Action, OrderSide, OrderType, OrderStatus, ExitReason
 
 class TradingSignal(BaseModel):
     timestamp: datetime
@@ -43,6 +43,9 @@ class OrderRequest(BaseModel):
     price: float = Field(gt=0)
     stop_loss: Optional[float] = None
     target_price: Optional[float] = None
+    account_id: Optional[str] = None
+    snapshot_id: Optional[str] = None
+    decision_id: Optional[str] = None
 
 class Order(BaseModel):
     order_id: str
@@ -57,6 +60,9 @@ class Order(BaseModel):
     status: OrderStatus = OrderStatus.PENDING
     created_at: datetime
     updated_at: datetime
+    account_id: Optional[str] = None
+    snapshot_id: Optional[str] = None
+    decision_id: Optional[str] = None
 
 class Execution(BaseModel):
     execution_id: str
@@ -69,11 +75,14 @@ class Execution(BaseModel):
     fee: float = Field(default=0.0, ge=0)
     slippage: float = Field(default=0.0, ge=0)
     executed_at: datetime
+    account_id: Optional[str] = None
 
 class Trade(BaseModel):
     trade_id: str
     model_id: str
+    account_id: Optional[str] = None
     symbol: str
+    exchange: str = "NSE"
     entry_execution_id: str
     exit_execution_id: Optional[str] = None
     quantity: int = Field(gt=0)
@@ -81,8 +90,13 @@ class Trade(BaseModel):
     exit_price: Optional[float] = None
     entry_time: datetime
     exit_time: Optional[datetime] = None
+    initial_stop: Optional[float] = None
+    trailing_stop: Optional[float] = None
     gross_pnl: float = 0.0
     total_fees: float = 0.0
     total_slippage: float = 0.0
     net_pnl: float = 0.0
+    exit_reason: Optional[ExitReason] = None
+    snapshot_id: Optional[str] = None
+    decision_id: Optional[str] = None
     is_closed: bool = False

@@ -24,6 +24,16 @@ class RiskEngine:
         stop_equity = starting_balance * (1.0 - self.config.daily_loss_limit_pct)
         return target_equity, stop_equity
 
+    def calculate_position_size(self, price: float, available_cash: float) -> int:
+        """
+        Deterministic position sizing:
+        Respects available capital, price, and max_position_size_pct.
+        """
+        if price <= 0 or available_cash <= 0:
+            return 0
+        allocated_cash = available_cash * self.config.max_position_size_pct
+        return max(0, int(allocated_cash // price))
+
     def evaluate_decision(
         self,
         decision: TradeDecision,
@@ -42,6 +52,16 @@ class RiskEngine:
                 rule_name="ACCOUNT_STATE_CHECK",
                 timestamp=now
             )
+
+        # Rule 1b: 15:15 IST auto square-off cutoff for new BUY entries
+        if decision.action == Action.BUY:
+            if getattr(account, "square_off_triggered", False) or (now.hour > 15 or (now.hour == 15 and now.minute >= 15)):
+                return RiskCheckResult(
+                    decision=RiskDecision.REJECTED,
+                    reason="New BUY entries prohibited during auto square-off period (>= 15:15 IST)",
+                    rule_name="SQUARE_OFF_CUTOFF",
+                    timestamp=now
+                )
 
         # Rule 2: Pass HOLD decisions safely
         if decision.action == Action.HOLD:
