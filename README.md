@@ -43,6 +43,7 @@ AutoTrade AI evaluates 8 open-weights local small language models (SLMs) in a co
 - **Dynamic Trailing Stop**: High-water mark ratcheting floor protects accumulated intraday gains without LLM interference.
 - **Daily Compounding**: At session close, realized Net P&L compounds into the next trading day's starting balance. Daily target (+10%) and stop loss (-5%) dynamically recalculate each morning.
 - **Zero-Trade Days Allowed**: Models proposing `HOLD` or failing risk checks preserve capital without penalty. Maximum 20 completed trades per session.
+- **Deterministic Reproducibility**: All market data, features, candidate rankings, and paper-trading execution cycles maintain strict temporal integrity and cryptographic SHA-256 provenance.
 
 ---
 
