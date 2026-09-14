@@ -15,7 +15,7 @@ def audit_cli():
 
 
 @audit_cli.command(name="status")
-@click.option("--db-path", default="/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db", help="Path to SQLite DB")
+@click.option("--db-path", default="database/mobitrade.db", help="Path to SQLite DB")
 def audit_status(db_path):
     """Display audit log summary and chain health."""
     logger = AuditLogger(db_path=db_path)
@@ -38,7 +38,7 @@ def audit_status(db_path):
 
 @audit_cli.command(name="verify")
 @click.option("--session", "session_id", default=None, help="Filter verification to specific session")
-@click.option("--db-path", default="/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db", help="Path to SQLite DB")
+@click.option("--db-path", default="database/mobitrade.db", help="Path to SQLite DB")
 def audit_verify(session_id, db_path):
     """Verify cryptographic SHA-256 chain integrity."""
     logger = AuditLogger(db_path=db_path)
@@ -62,7 +62,7 @@ def audit_verify(session_id, db_path):
 
 @audit_cli.command(name="inspect")
 @click.argument("event_id")
-@click.option("--db-path", default="/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db", help="Path to SQLite DB")
+@click.option("--db-path", default="database/mobitrade.db", help="Path to SQLite DB")
 def audit_inspect(event_id, db_path):
     """Inspect full payload and cryptographic hash of a single event."""
     logger = AuditLogger(db_path=db_path)
@@ -97,7 +97,7 @@ def audit_inspect(event_id, db_path):
 @audit_cli.command(name="session")
 @click.argument("session_id")
 @click.option("--limit", default=50, help="Max events to display")
-@click.option("--db-path", default="/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db", help="Path to SQLite DB")
+@click.option("--db-path", default="database/mobitrade.db", help="Path to SQLite DB")
 def audit_session(session_id, limit, db_path):
     """Display audit trail for a specific trading session."""
     logger = AuditLogger(db_path=db_path)
@@ -123,7 +123,7 @@ def audit_session(session_id, limit, db_path):
 
 @audit_cli.command(name="trade")
 @click.argument("trade_id")
-@click.option("--db-path", default="/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db", help="Path to SQLite DB")
+@click.option("--db-path", default="database/mobitrade.db", help="Path to SQLite DB")
 def audit_trade(trade_id, db_path):
     """Display full lifecycle audit trail for a specific trade."""
     logger = AuditLogger(db_path=db_path)

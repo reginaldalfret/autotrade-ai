@@ -259,7 +259,9 @@ def llm_optimize(mock: bool):
         prof.benchmark_result = {
             "prompt_eval_tok_s": res.prompt_eval_tok_s,
             "eval_tok_s": res.eval_tok_s,
+            "tokens_per_second": res.eval_tok_s,
             "latency_ms": res.latency_ms,
+            "avg_latency_ms": res.latency_ms,
             "vram_usage_mb": res.vram_usage_mb,
             "ram_usage_mb": res.ram_usage_mb,
             "json_valid": res.json_valid,
@@ -270,6 +272,7 @@ def llm_optimize(mock: bool):
             "context_size": 2048,
             "kv_cache": "f16",
             "concurrency": "single_model_sequential",
+            "temperature": 0.1,
         }
         save_path = save_performance_profile(prof)
         click.echo(f" - {res.model_id.ljust(10)} -> {save_path} ({res.eval_tok_s:.1f} tok/s, {res.latency_ms:.0f}ms)")

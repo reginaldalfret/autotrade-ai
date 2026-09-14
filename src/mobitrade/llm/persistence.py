@@ -10,7 +10,7 @@ class LLMDatabaseRepository:
     SQLite persistence for LLM model runs, decisions, and hardware inference metrics.
     Database: D:\\Trading LLM\\MobiTradeAI\\database\\mobitrade.db
     """
-    def __init__(self, db_path: str = "/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db"):
+    def __init__(self, db_path: str = "database/mobitrade.db"):
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._init_db()

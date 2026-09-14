@@ -19,7 +19,7 @@ class PaperDatabaseRepository:
     and daily PDF reporting metadata.
     Database: database/mobitrade.db
     """
-    def __init__(self, db_path: str = "/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db"):
+    def __init__(self, db_path: str = "database/mobitrade.db"):
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.audit_logger = AuditLogger(db_path=str(self.db_path))

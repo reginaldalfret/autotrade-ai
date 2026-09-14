@@ -33,7 +33,7 @@ def status():
     click.echo("AutoTrade AI - Platform Status")
     click.echo("==================================================")
     click.echo("Project Root:   D:\\Trading LLM\\MobiTradeAI")
-    click.echo("WSL2 Mount:     /mnt/d/Trading LLM/MobiTradeAI")
+    click.echo("WSL2 Mount:     /root/projects/AutoTradeAI")
     click.echo("Storage Policy: D: preferred, E: allowed, C: strictly prohibited")
     click.echo("Execution Mode: LOCAL-FIRST PAPER TRADING ONLY")
 

@@ -26,7 +26,7 @@ class PerformanceAnalyticsEngine:
     Read-only analytics engine querying mobitrade.db to produce
     auditable performance reports, model comparisons, and financial reconciliations.
     """
-    def __init__(self, db_path: str = "/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db"):
+    def __init__(self, db_path: str = "database/mobitrade.db"):
         self.db_path = Path(db_path)
 
     def _get_connection(self) -> sqlite3.Connection:

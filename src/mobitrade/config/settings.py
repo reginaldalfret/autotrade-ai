@@ -37,7 +37,7 @@ class CostConfig(BaseModel):
 class AppSettings(BaseModel):
     version: str = "1.0.0"
     environment: str = "development"
-    base_dir: str = "/mnt/d/Trading LLM/MobiTradeAI"
+    base_dir: str = "/root/projects/AutoTradeAI"
     starting_capital: float = 1000.0
     currency: str = "INR"
     risk: RiskConfig = Field(default_factory=RiskConfig)

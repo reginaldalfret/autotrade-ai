@@ -206,7 +206,7 @@ class AuditLogger:
     Cryptographic append-only audit logger backed by SQLite and optional JSONL file.
     Enforces sequential sequence numbers and continuous SHA-256 hash chains.
     """
-    def __init__(self, db_path: str = "/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db", log_dir: Optional[str] = None):
+    def __init__(self, db_path: str = "database/mobitrade.db", log_dir: Optional[str] = None):
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.log_dir = Path(log_dir) if log_dir else None

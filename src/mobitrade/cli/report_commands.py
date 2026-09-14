@@ -18,7 +18,7 @@ def report_cli():
 @report_cli.command(name="generate")
 @click.option("--session", "session_id", default=None, help="Session ID")
 @click.option("--date", "session_date", default=None, help="Date (YYYY-MM-DD)")
-@click.option("--db-path", default="/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db", help="Path to SQLite DB")
+@click.option("--db-path", default="database/mobitrade.db", help="Path to SQLite DB")
 def report_generate(session_id, session_date, db_path):
     """Generate institutional multi-page PDF trading report."""
     repo = PaperDatabaseRepository(db_path=db_path)
@@ -47,7 +47,7 @@ def report_generate(session_id, session_date, db_path):
 @report_cli.command(name="regenerate")
 @click.option("--session", "session_id", default=None, help="Session ID")
 @click.option("--date", "session_date", default=None, help="Date (YYYY-MM-DD)")
-@click.option("--db-path", default="/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db", help="Path to SQLite DB")
+@click.option("--db-path", default="database/mobitrade.db", help="Path to SQLite DB")
 def report_regenerate(session_id, session_date, db_path):
     """Force re-generate and update an existing daily report."""
     generator = DailyReportGenerator(db_path=db_path)
@@ -67,7 +67,7 @@ def report_regenerate(session_id, session_date, db_path):
 
 @report_cli.command(name="validate")
 @click.argument("pdf_path_or_id")
-@click.option("--db-path", default="/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db", help="Path to SQLite DB")
+@click.option("--db-path", default="database/mobitrade.db", help="Path to SQLite DB")
 def report_validate(pdf_path_or_id, db_path):
     """Validate cryptographic SHA-256 fingerprint of a PDF report against database."""
     repo = PaperDatabaseRepository(db_path=db_path)

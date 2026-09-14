@@ -33,10 +33,10 @@ def paper_status():
     click.echo("Order Execution:      PaperBroker (Indian Statutory Costs + 0.05% Slippage)")
     click.echo("Safety Authority:     Deterministic RiskEngine (LLM cannot override)")
     click.echo("Compounding Policy:   Daily Final Realized Equity Compounds to Next Day")
-    click.echo("Database:             /mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db")
+    click.echo("Database:             database/mobitrade.db")
 
 @paper_cli.command(name="accounts")
-@click.option("--db-path", default="/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db")
+@click.option("--db-path", default="database/mobitrade.db")
 def paper_accounts(db_path):
     """List 8 isolated model paper trading accounts and current balances."""
     repo = PaperDatabaseRepository(db_path=db_path)
@@ -65,7 +65,7 @@ def paper_accounts(db_path):
 
 @paper_cli.command(name="positions")
 @click.option("--model-id", default=None, help="Filter by specific model ID")
-@click.option("--db-path", default="/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db")
+@click.option("--db-path", default="database/mobitrade.db")
 def paper_positions(model_id, db_path):
     """Show current open positions for model accounts."""
     repo = PaperDatabaseRepository(db_path=db_path)
@@ -96,7 +96,7 @@ def paper_positions(model_id, db_path):
 @paper_cli.command(name="trades")
 @click.option("--date", default=None, help="Session date YYYY-MM-DD")
 @click.option("--model-id", default=None, help="Filter by specific model ID")
-@click.option("--db-path", default="/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db")
+@click.option("--db-path", default="database/mobitrade.db")
 def paper_trades(date, model_id, db_path):
     """List completed trades with gross/net P&L and statutory cost breakdowns."""
     repo = PaperDatabaseRepository(db_path=db_path)
@@ -131,7 +131,7 @@ def paper_trades(date, model_id, db_path):
 
 @paper_cli.command(name="performance")
 @click.option("--date", default=None, help="Specific session date YYYY-MM-DD")
-@click.option("--db-path", default="/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db")
+@click.option("--db-path", default="database/mobitrade.db")
 def paper_performance(date, db_path):
     """View daily multi-model performance leaderboard and compounding history."""
     repo = PaperDatabaseRepository(db_path=db_path)
@@ -163,7 +163,7 @@ def paper_performance(date, db_path):
 @paper_cli.command(name="simulate")
 @click.option("--date", default="2026-09-11", help="Session date to simulate YYYY-MM-DD")
 @click.option("--symbol", default="TATAMOTORS", help="Stock symbol to simulate")
-@click.option("--db-path", default="/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db")
+@click.option("--db-path", default="database/mobitrade.db")
 def paper_simulate(date, symbol, db_path):
     """Run an end-to-end deterministic paper trading replay session."""
     engine = PaperTradingEngine(db_path=db_path)

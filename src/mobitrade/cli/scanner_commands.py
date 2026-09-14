@@ -25,7 +25,7 @@ def scanner_status():
     click.echo("Active Hours:          09:15 - 15:30 IST")
     click.echo("Temporal Safety:       Point-in-Time Gated (available_at <= decision_timestamp)")
     click.echo("Scoring Engine:        Deterministic multi-factor linear score (0 - 100)")
-    click.echo("Database Persistence:  /mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db")
+    click.echo("Database Persistence:  database/mobitrade.db")
     click.echo("Execution Pipeline:    Candidate Generation Only (NO TRADES / NO LLM INFERENCE)")
 
 @scanner_cli.command(name="validate")
@@ -44,7 +44,7 @@ def scanner_validate(config):
     click.echo("Scanner configuration valid.")
 
 @scanner_cli.command(name="inspect")
-@click.option("--db-path", default="/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db")
+@click.option("--db-path", default="database/mobitrade.db")
 def scanner_inspect(db_path):
     """Inspect recent scanner persistence records in database."""
     repo = ScannerDatabaseRepository(db_path)

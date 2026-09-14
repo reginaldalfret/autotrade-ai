@@ -25,8 +25,8 @@ def external_status():
     click.echo("                       MACRO_REGULATORY  (Rank 2: RBI / SEBI Macro)")
     click.echo("                       FINANCIAL_NEWS    (Rank 3: Reputable Financial Media)")
     click.echo("Temporal Availability: Point-in-Time Gated (available_at <= decision_timestamp)")
-    click.echo("Storage Caching:       /mnt/d/Trading LLM/MobiTradeAI/data/raw/external/")
-    click.echo("                       /mnt/d/Trading LLM/MobiTradeAI/data/processed/external/")
+    click.echo("Storage Caching:       data/raw/external/")
+    click.echo("                       data/processed/external/")
     click.echo("Database Tables:       external_information, information_contexts, context_items")
     click.echo("Operating Mode:        Raw Context Assembly (NO LLM SUMMARIZATION / NO TRADES)")
 
@@ -47,7 +47,7 @@ def external_validate(config):
     click.echo("External information configuration valid.")
 
 @external_cli.command(name="inspect")
-@click.option("--db-path", default="/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db")
+@click.option("--db-path", default="database/mobitrade.db")
 def external_inspect(db_path):
     """Inspect stored external information records and contexts."""
     repo = InformationRepository(db_path=db_path)

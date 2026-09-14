@@ -20,7 +20,7 @@ class ParquetFeatureRepository:
       (symbol, exchange, timeframe, candle_timestamp, feature_version).
     - Sorts strictly by candle_timestamp.
     """
-    def __init__(self, base_data_dir: str = "/mnt/d/Trading LLM/MobiTradeAI/data"):
+    def __init__(self, base_data_dir: str = "data"):
         self.base_dir = Path(base_data_dir)
         self.features_dir = self.base_dir / "processed" / "market=indian_equity" / "features"
 

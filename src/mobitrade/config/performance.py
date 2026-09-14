@@ -66,7 +66,7 @@ def _resolve_config_dir(config_dir: Union[str, Path] = "configs/llm-performance"
         p,
         repo_root / config_dir,
         Path("D:/Trading LLM/MobiTradeAI") / config_dir,
-        Path("/mnt/d/Trading LLM/MobiTradeAI") / config_dir,
+        Path("/root/projects/AutoTradeAI") / config_dir,
     ]
     for cand in candidates:
         if cand.is_dir():

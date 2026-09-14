@@ -84,9 +84,9 @@ class DailyReportGenerator:
     """
     def __init__(
         self,
-        db_path: str = "/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db",
-        reports_dir: str = "/mnt/d/Trading LLM/MobiTradeAI/reports/daily",
-        temp_dir: str = "/mnt/d/Trading LLM/MobiTradeAI/reports/temp"
+        db_path: str = "database/mobitrade.db",
+        reports_dir: str = "reports/daily",
+        temp_dir: str = "reports/temp"
     ):
         self.db_path = Path(db_path)
         self.reports_dir = Path(reports_dir)

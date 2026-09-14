@@ -12,11 +12,14 @@ recommended_configuration:
   context_size: 2048
   kv_cache: f16
   concurrency: single_model_sequential
+  temperature: 0.1
 benchmark_result:
   prompt_eval_tok_s: 8000.0
   eval_tok_s: 4333.33
+  tokens_per_second: 4333.33
   latency_ms: 15.0
-  vram_usage_mb: 94.0
-  ram_usage_mb: 24.69
+  avg_latency_ms: 15.0
+  vram_usage_mb: 55.0
+  ram_usage_mb: 1.61
   json_valid: true
 updated_at: '2026-09-14T12:00:00Z'

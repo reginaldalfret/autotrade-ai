@@ -17,7 +17,7 @@ def analytics_cli():
 @analytics_cli.command(name="leaderboard")
 @click.option("--session", "session_id", default=None, help="Session ID")
 @click.option("--date", "session_date", default=None, help="Date (YYYY-MM-DD)")
-@click.option("--db-path", default="/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db", help="Path to SQLite DB")
+@click.option("--db-path", default="database/mobitrade.db", help="Path to SQLite DB")
 def analytics_leaderboard(session_id, session_date, db_path):
     """Display 8-model tournament leaderboard for a session."""
     engine = PerformanceAnalyticsEngine(db_path=db_path)
@@ -65,7 +65,7 @@ def analytics_leaderboard(session_id, session_date, db_path):
 @analytics_cli.command(name="daily")
 @click.option("--session", "session_id", default=None, help="Session ID")
 @click.option("--date", "session_date", default=None, help="Date (YYYY-MM-DD)")
-@click.option("--db-path", default="/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db", help="Path to SQLite DB")
+@click.option("--db-path", default="database/mobitrade.db", help="Path to SQLite DB")
 def analytics_daily(session_id, session_date, db_path):
     """Display executive performance summary for a trading day."""
     engine = PerformanceAnalyticsEngine(db_path=db_path)
@@ -106,7 +106,7 @@ def analytics_daily(session_id, session_date, db_path):
 @analytics_cli.command(name="model")
 @click.argument("model_id")
 @click.option("--session", "session_id", default=None, help="Session ID")
-@click.option("--db-path", default="/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db", help="Path to SQLite DB")
+@click.option("--db-path", default="database/mobitrade.db", help="Path to SQLite DB")
 def analytics_model(model_id, session_id, db_path):
     """Display detailed metrics deep dive for a single model."""
     engine = PerformanceAnalyticsEngine(db_path=db_path)
@@ -144,7 +144,7 @@ def analytics_model(model_id, session_id, db_path):
 
 @analytics_cli.command(name="symbol")
 @click.option("--session", "session_id", default=None, help="Session ID")
-@click.option("--db-path", default="/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db", help="Path to SQLite DB")
+@click.option("--db-path", default="database/mobitrade.db", help="Path to SQLite DB")
 def analytics_symbol(session_id, db_path):
     """Display trading performance grouped by equity symbol."""
     engine = PerformanceAnalyticsEngine(db_path=db_path)
@@ -174,7 +174,7 @@ def analytics_symbol(session_id, db_path):
 
 @analytics_cli.command(name="reconcile")
 @click.argument("session_id")
-@click.option("--db-path", default="/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db", help="Path to SQLite DB")
+@click.option("--db-path", default="database/mobitrade.db", help="Path to SQLite DB")
 def analytics_reconcile(session_id, db_path):
     """Run strict mathematical data and ledger reconciliation."""
     engine = PerformanceAnalyticsEngine(db_path=db_path)

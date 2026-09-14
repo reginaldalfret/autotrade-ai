@@ -23,8 +23,8 @@ class InformationRepository:
     """
     def __init__(
         self,
-        db_path: str = "/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db",
-        base_cache_dir: str = "/mnt/d/Trading LLM/MobiTradeAI/data"
+        db_path: str = "database/mobitrade.db",
+        base_cache_dir: str = "data"
     ):
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)

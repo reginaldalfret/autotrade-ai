@@ -18,7 +18,7 @@ class ParquetDataRepository:
     Structured by year/month to avoid reading all files into memory on an 8 GB RAM system:
     data/processed/market=indian_equity/exchange={exchange}/symbol={symbol}/timeframe={timeframe}/year={year}/month={month}/
     """
-    def __init__(self, base_data_dir: str = "/mnt/d/Trading LLM/MobiTradeAI/data"):
+    def __init__(self, base_data_dir: str = "data"):
         self.base_dir = Path(base_data_dir)
         self.raw_dir = self.base_dir / "raw"
         self.processed_dir = self.base_dir / "processed" / "market=indian_equity"

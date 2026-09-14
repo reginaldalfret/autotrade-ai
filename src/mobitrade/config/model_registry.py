@@ -13,7 +13,7 @@ class ModelRegistry:
             candidates = [
                 Path("configs/models.yaml"),
                 Path(__file__).resolve().parent.parent.parent.parent / "configs" / "models.yaml",
-                Path("/mnt/d/Trading LLM/MobiTradeAI/configs/models.yaml"),
+                Path("configs/models.yaml"),
                 Path("D:/Trading LLM/MobiTradeAI/configs/models.yaml"),
             ]
             for cand in candidates:

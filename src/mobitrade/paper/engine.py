@@ -29,7 +29,7 @@ class PaperTradingEngine:
         self,
         cost_config: Optional[CostConfig] = None,
         risk_config: Optional[RiskConfig] = None,
-        db_path: str = "/mnt/d/Trading LLM/MobiTradeAI/database/mobitrade.db",
+        db_path: str = "database/mobitrade.db",
         initial_balance_per_model: float = 1000.0,
         trailing_distance_pct: float = 0.005
     ):
