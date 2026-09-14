@@ -12,6 +12,13 @@ from mobitrade.llm.validator import DecisionValidator
 from mobitrade.llm.persistence import LLMDatabaseRepository
 from mobitrade.llm.scheduler import SequentialLLMScheduler
 
+from mobitrade.llm.hardware import detect_gpu_environment
+from mobitrade.llm.benchmark import (
+    LLMBenchmarkRunner,
+    ModelBenchmarkResult,
+    BenchmarkSuiteResult,
+)
+
 __all__ = [
     "LLMAction",
     "ValidationStatus",
@@ -24,4 +31,8 @@ __all__ = [
     "DecisionValidator",
     "LLMDatabaseRepository",
     "SequentialLLMScheduler",
+    "detect_gpu_environment",
+    "LLMBenchmarkRunner",
+    "ModelBenchmarkResult",
+    "BenchmarkSuiteResult",
 ]

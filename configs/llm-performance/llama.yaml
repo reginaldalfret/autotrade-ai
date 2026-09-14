@@ -1,0 +1,22 @@
+model_id: llama
+runtime: ollama
+context_size: 2048
+gpu_layers: -1
+flash_attention: true
+kv_cache_type: f16
+threads: 4
+batch_size: 512
+recommended_configuration:
+  gpu_layers: -1
+  flash_attention: true
+  context_size: 2048
+  kv_cache: f16
+  concurrency: single_model_sequential
+benchmark_result:
+  prompt_eval_tok_s: 8000.0
+  eval_tok_s: 4333.33
+  latency_ms: 15.0
+  vram_usage_mb: 94.0
+  ram_usage_mb: 450.0
+  json_valid: true
+updated_at: '2026-09-14T12:00:00Z'

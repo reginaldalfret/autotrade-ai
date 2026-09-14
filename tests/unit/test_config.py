@@ -13,3 +13,11 @@ def test_configuration_loading():
     nemotron = registry.get_model("nemotron")
     assert nemotron is not None
     assert nemotron.runtime_model_name == "nemotron-3-nano:latest"
+
+def test_performance_profile_loading():
+    from mobitrade.config import load_performance_profile, LLMPerformanceProfile
+    profile = load_performance_profile("nemotron")
+    assert isinstance(profile, LLMPerformanceProfile)
+    assert profile.model_id == "nemotron"
+    assert profile.runtime == "ollama"
+
