@@ -15,9 +15,22 @@ class DecisionValidator:
         expected_snapshot_id: str,
         current_price: float
     ) -> Tuple[bool, ValidationStatus, Optional[str], Optional[Dict[str, Any]]]:
-        # 1. JSON Parse
+        # 1. Clean and extract JSON substring
+        cleaned = raw_text.strip() if raw_text else ""
+        if "</think>" in cleaned:
+            cleaned = cleaned.split("</think>")[-1].strip()
+        if "```json" in cleaned:
+            cleaned = cleaned.split("```json")[1].split("```")[0].strip()
+        elif "```" in cleaned:
+            cleaned = cleaned.split("```")[1].split("```")[0].strip()
+
+        start_idx = cleaned.find("{")
+        end_idx = cleaned.rfind("}")
+        if start_idx != -1 and end_idx != -1 and end_idx >= start_idx:
+            cleaned = cleaned[start_idx:end_idx + 1]
+
         try:
-            data = json.loads(raw_text.strip())
+            data = json.loads(cleaned)
         except Exception as e:
             return False, ValidationStatus.INVALID_FORMAT, f"Malformed JSON: {e}", None
 

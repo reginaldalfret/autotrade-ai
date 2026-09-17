@@ -53,6 +53,18 @@ class SequentialLLMScheduler:
         Sequentially evaluates all models on the supplied immutable MarketSnapshot.
         Simulation time remains frozen throughout the decision cycle.
         """
+        run, _ = self.evaluate_snapshot_records(snapshot, enabled_only=enabled_only, persist=persist)
+        return run
+
+    def evaluate_snapshot_records(
+        self,
+        snapshot: MarketSnapshot,
+        enabled_only: bool = True,
+        persist: bool = True
+    ) -> Any:
+        """
+        Sequentially evaluates all models and returns both the run metadata and individual decision records.
+        """
         cycle_start = time.perf_counter()
         run_id = f"run_{uuid.uuid4().hex[:8]}"
 
@@ -93,7 +105,7 @@ class SequentialLLMScheduler:
         if persist:
             self.repository.save_evaluation_run(run, decision_records)
 
-        return run
+        return run, decision_records
 
     def _evaluate_single_model(
         self,
@@ -343,4 +355,20 @@ class SequentialLLMScheduler:
                 }
                 for d in snapshot.information_context.relevant_information
             ]
-        return json.dumps(data, indent=2)
+        snapshot_json = json.dumps(data, indent=2)
+        instruction = (
+            "You are an expert intraday quantitative analyst for the Indian NSE equity market.\n"
+            "Evaluate this frozen point-in-time MarketSnapshot and produce your trading decision.\n\n"
+            "You MUST respond with a valid JSON object strictly conforming to:\n"
+            "{\n"
+            '  "action": "BUY" | "SELL" | "HOLD" | "NO_ACTION",\n'
+            '  "confidence": 0.0 to 1.0,\n'
+            '  "entry_rationale": "clear concise reason for trade or hold",\n'
+            '  "proposed_stop_loss": <numeric price below entry for BUY, or null>,\n'
+            '  "proposed_target": <numeric price above entry for BUY, or null>,\n'
+            '  "holding_intent": "INTRADAY",\n'
+            '  "reasoning_summary": "detailed technical analysis summary"\n'
+            "}\n\n"
+            "Market Snapshot:\n"
+        )
+        return instruction + snapshot_json

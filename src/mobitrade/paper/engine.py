@@ -129,7 +129,7 @@ class PaperTradingEngine:
                 session_id=session_id,
                 model_id=mid,
                 event_type="DECISION_REJECTED_INVALID",
-                payload={"reason": str(decision_record.validation_status), "raw_output": decision_record.raw_output},
+                payload={"reason": str(decision_record.validation_status), "raw_output": getattr(decision_record, "raw_response", getattr(decision_record, "raw_output", ""))},
                 timestamp=snapshot.decision_timestamp
             )
             return None
