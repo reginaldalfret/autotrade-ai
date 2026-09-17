@@ -160,3 +160,51 @@ class SessionRunResponse(BaseModel):
     total_trades: int
     leaderboard: List[Dict[str, Any]]
     message: str
+
+
+class LearningStatusResponse(BaseModel):
+    active_strategy_version: str
+    total_strategy_versions: int
+    total_observations_recorded: int
+    model_profiles_calibrated: int
+    recent_observations: List[Dict[str, Any]]
+
+
+class LearningObservationsResponse(BaseModel):
+    count: int
+    observations: List[Dict[str, Any]]
+
+
+class LearningCandidatesResponse(BaseModel):
+    count: int
+    candidates: List[Dict[str, Any]]
+
+
+class LearningStrategyResponse(BaseModel):
+    active_version: str
+    strategy: Dict[str, Any]
+
+
+class LearningHistoryResponse(BaseModel):
+    strategies_count: int
+    strategies: List[Dict[str, Any]]
+    validation_reports_count: int
+    validation_reports: List[Dict[str, Any]]
+
+
+class LearningRunRequest(BaseModel):
+    auto_activate_best: bool = False
+    session_id: Optional[str] = None
+
+
+class LearningRunResponse(BaseModel):
+    status: str
+    timestamp: str
+    observations_count: int
+    candidates_generated: int
+    candidates_validated: int
+    candidates_rejected: int
+    current_active_strategy: str
+    promoted_strategy: Optional[str] = None
+    validation_reports: List[Dict[str, Any]]
+    message: str

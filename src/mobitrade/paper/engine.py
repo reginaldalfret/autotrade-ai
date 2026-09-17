@@ -42,6 +42,15 @@ class PaperTradingEngine:
         self.trailing_stop_engine = TrailingStopEngine(default_trailing_pct=trailing_distance_pct)
         self.broker = PaperBroker(self.cost_config)
 
+        # Load active validated strategy configuration
+        try:
+            from mobitrade.learning.persistence import LearningDatabaseRepository
+            self.learning_repo = LearningDatabaseRepository(db_path=db_path)
+            self.active_strategy = self.learning_repo.get_active_strategy()
+        except Exception:
+            self.learning_repo = None
+            self.active_strategy = None
+
         # 8 isolated per-model portfolios and accounts
         self.accounts: Dict[str, Account] = {}
         self.portfolios: Dict[str, PortfolioManager] = {}
@@ -125,6 +134,31 @@ class PaperTradingEngine:
 
         # 2. Process BUY decision
         if decision_record.action == Action.BUY:
+            # Active strategy filter check
+            if self.active_strategy:
+                if mid not in self.active_strategy.allowed_models:
+                    self.persistence.record_audit_event(
+                        session_id=session_id,
+                        model_id=mid,
+                        event_type="DECISION_REJECTED",
+                        payload={"reason": f"Model {mid} excluded by active strategy {self.active_strategy.version_id}"},
+                        timestamp=snapshot.decision_timestamp,
+                    )
+                    return None
+
+                req_conf = self.active_strategy.model_confidence_thresholds.get(
+                    mid, self.active_strategy.min_confidence_threshold
+                )
+                if decision_record.confidence < req_conf:
+                    self.persistence.record_audit_event(
+                        session_id=session_id,
+                        model_id=mid,
+                        event_type="DECISION_REJECTED",
+                        payload={"reason": f"Confidence {decision_record.confidence:.2f} below strategy requirement {req_conf:.2f}"},
+                        timestamp=snapshot.decision_timestamp,
+                    )
+                    return None
+
             # Deterministic position sizing
             qty = self.risk_engine.calculate_position_size(current_market_price, portfolio.cash)
             if qty <= 0:

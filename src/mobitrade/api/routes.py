@@ -29,6 +29,13 @@ from mobitrade.api.schemas import (
     AuditVerificationResponse,
     SessionRunRequest,
     SessionRunResponse,
+    LearningStatusResponse,
+    LearningObservationsResponse,
+    LearningCandidatesResponse,
+    LearningStrategyResponse,
+    LearningHistoryResponse,
+    LearningRunRequest,
+    LearningRunResponse,
 )
 from mobitrade.config.model_registry import ModelRegistry
 from mobitrade.config.settings import RiskConfig, CostConfig, load_yaml_config
@@ -38,6 +45,7 @@ from mobitrade.paper.persistence import PaperDatabaseRepository
 from mobitrade.logging.audit import AuditLogger
 from mobitrade.analytics.engine import PerformanceAnalyticsEngine
 from mobitrade.paper.engine import PaperTradingEngine, DEFAULT_MODELS
+from mobitrade.learning.engine import SelfLearningEngine
 from mobitrade.domain.snapshot import MarketSnapshot
 from mobitrade.domain.data_models import Timeframe
 from mobitrade.domain.enums import Action
@@ -512,3 +520,100 @@ def run_session(request: Request, payload: SessionRunRequest):
         leaderboard=leaderboard,
         message="Deterministic paper session executed successfully with risk enforcement.",
     )
+
+
+@router.get("/learning/status", response_model=LearningStatusResponse, tags=["Learning"])
+def get_learning_status(request: Request):
+    """Inspect current self-learning engine status, active strategy, and calibrated profiles."""
+    db_path = _get_db_path(request)
+    engine = SelfLearningEngine(db_path=db_path)
+    res = engine.get_status()
+    return LearningStatusResponse(
+        active_strategy_version=res["active_strategy_version"],
+        total_strategy_versions=res["total_strategy_versions"],
+        total_observations_recorded=res["total_observations_recorded"],
+        model_profiles_calibrated=res["model_profiles_calibrated"],
+        recent_observations=res["recent_observations"],
+    )
+
+
+@router.get("/learning/observations", response_model=LearningObservationsResponse, tags=["Learning"])
+def get_learning_observations(request: Request, limit: int = Query(50, ge=1, le=500)):
+    """Retrieve structured learning observations and diagnosed trading weaknesses."""
+    db_path = _get_db_path(request)
+    engine = SelfLearningEngine(db_path=db_path)
+    obs = engine.repo.list_observations(limit=limit)
+    return LearningObservationsResponse(
+        count=len(obs),
+        observations=[o.model_dump() for o in obs],
+    )
+
+
+@router.get("/learning/candidates", response_model=LearningCandidatesResponse, tags=["Learning"])
+def get_learning_candidates(request: Request):
+    """List generated candidate strategy improvements and testing statuses."""
+    db_path = _get_db_path(request)
+    engine = SelfLearningEngine(db_path=db_path)
+    all_strats = engine.repo.list_strategies()
+    candidates = [s.model_dump() for s in all_strats if s.status.value != "ACTIVE"]
+    return LearningCandidatesResponse(
+        count=len(candidates),
+        candidates=candidates,
+    )
+
+
+@router.get("/learning/strategy", response_model=LearningStrategyResponse, tags=["Learning"])
+def get_learning_strategy(request: Request):
+    """Retrieve the currently active validated strategy configuration."""
+    db_path = _get_db_path(request)
+    engine = SelfLearningEngine(db_path=db_path)
+    active = engine.repo.get_active_strategy()
+    if not active:
+        engine.repo._ensure_baseline_strategy()
+        active = engine.repo.get_active_strategy()
+    return LearningStrategyResponse(
+        active_version=active.version_id,
+        strategy=active.model_dump(),
+    )
+
+
+@router.get("/learning/history", response_model=LearningHistoryResponse, tags=["Learning"])
+def get_learning_history(request: Request):
+    """Retrieve complete strategy versioning history and backtest validation reports."""
+    db_path = _get_db_path(request)
+    engine = SelfLearningEngine(db_path=db_path)
+    strats = engine.repo.list_strategies()
+    reports = engine.repo.list_validation_reports()
+    return LearningHistoryResponse(
+        strategies_count=len(strats),
+        strategies=[s.model_dump() for s in strats],
+        validation_reports_count=len(reports),
+        validation_reports=[r.model_dump() for r in reports],
+    )
+
+
+@router.post("/learning/run", response_model=LearningRunResponse, tags=["Learning"])
+def run_learning(request: Request, payload: Optional[LearningRunRequest] = None):
+    """
+    Execute a single controlled self-learning and candidate validation cycle.
+    Does NOT start continuous or autonomous background operation.
+    """
+    db_path = _get_db_path(request)
+    engine = SelfLearningEngine(db_path=db_path)
+    auto_activate = payload.auto_activate_best if payload else False
+    session_id = payload.session_id if payload else None
+
+    result = engine.run_learning_cycle(auto_activate_best=auto_activate, session_id=session_id)
+    return LearningRunResponse(
+        status=result["status"],
+        timestamp=result["timestamp"],
+        observations_count=result["observations_count"],
+        candidates_generated=result["candidates_generated"],
+        candidates_validated=result["candidates_validated"],
+        candidates_rejected=result["candidates_rejected"],
+        current_active_strategy=result["current_active_strategy"],
+        promoted_strategy=result["promoted_strategy"],
+        validation_reports=result["validation_reports"],
+        message="Self-learning evaluation cycle executed successfully.",
+    )
+
