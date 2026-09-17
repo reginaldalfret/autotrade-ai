@@ -99,6 +99,45 @@ def run_session():
 
     print(f"[Market Status] 09:15–15:30 IST Market Hours | Active: {is_session_active} | Square-Off (15:15 IST): {is_post_square_off}")
 
+    # Duplicate Protection: Daily Session Lock
+    # Duplicate Protection: Daily Session Lock
+    runtime_dir = root_dir / "runtime"
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+    lock_file = runtime_dir / f"session_{today_str}.lock"
+    win_runtime_dir = Path("/mnt/d/Trading LLM/MobiTradeAI/runtime")
+    win_lock_file = win_runtime_dir / f"session_{today_str}.lock" if win_runtime_dir.exists() else None
+
+    force_run = "--force" in sys.argv
+    for lf in [lock_file, win_lock_file]:
+        if lf and lf.exists() and not force_run:
+            try:
+                with open(lf, "r", encoding="utf-8") as f:
+                    lock_data = json.load(f)
+                lock_status = lock_data.get("status")
+                if lock_status in ("COMPLETED", "RUNNING"):
+                    print(f"[Lock Protection] Session for {today_str} is already marked as '{lock_status}'.")
+                    print(f"[Lock Protection] File: {lf}")
+                    print("[Lock Protection] Duplicate execution safely refused.")
+                    return
+            except Exception as e:
+                print(f"[Lock Protection] Note reading lock file {lf}: {e}")
+
+    # Mark session as running
+    lock_payload = {
+        "date": today_str,
+        "status": "RUNNING",
+        "started_at": now_ist.isoformat(),
+        "pid": os.getpid()
+    }
+    with open(lock_file, "w", encoding="utf-8") as f:
+        json.dump(lock_payload, f, indent=2)
+    if win_lock_file:
+        try:
+            with open(win_lock_file, "w", encoding="utf-8") as f:
+                json.dump(lock_payload, f, indent=2)
+        except Exception:
+            pass
+
     # 2. Check Ollama & 8 Models Readiness
     ollama_provider = OllamaLLMProvider(base_url="http://localhost:11434")
     if not ollama_provider.health_check():
@@ -293,6 +332,26 @@ def run_session():
         print(f" -> Warning generating report by session_id: {e}")
         report_path = pdf_generator.generate(today_str)
         print(f" -> Daily Report Generated: {report_path}")
+
+    # Mark session lock as completed
+    try:
+        completed_payload = {
+            "date": today_str,
+            "status": "COMPLETED",
+            "finished_at": datetime.now(IST).isoformat(),
+            "session_id": session_id,
+            "report_path": str(report_path)
+        }
+        with open(lock_file, "w", encoding="utf-8") as f:
+            json.dump(completed_payload, f, indent=2)
+        if win_lock_file:
+            try:
+                with open(win_lock_file, "w", encoding="utf-8") as f:
+                    json.dump(completed_payload, f, indent=2)
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"[Lock Protection] Warning updating lock file: {e}")
 
     # 15. Summary Printout
     repo = PaperDatabaseRepository(db_path=db_path)
