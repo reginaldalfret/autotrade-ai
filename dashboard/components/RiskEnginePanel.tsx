@@ -8,71 +8,48 @@ interface RiskEnginePanelProps {
 }
 
 export const RiskEnginePanel: React.FC<RiskEnginePanelProps> = ({ risk }) => {
-  const rules = [
-    { label: 'Max Daily Loss Limit', value: '-5.0%', status: 'ENFORCED', note: 'Account locked on breach' },
-    { label: 'Daily Profit Target Cap', value: '+10.0%', status: 'ENFORCED', note: 'Session halts on target reach' },
-    { label: 'Max Trades Per Day', value: '20 Orders', status: 'ENFORCED', note: 'Caps churn and overtrading' },
-    { label: 'Mandatory Square-off', value: '15:15 IST', status: 'ENFORCED', note: 'All intraday positions closed' },
-    { label: 'Trading Session Window', value: '09:15 - 15:30', status: 'ENFORCED', note: 'Strict NSE market hours' },
-    { label: 'Overnight Positions', value: 'DISABLED', status: 'PROHIBITED', note: 'Zero overnight carry risk' },
-    { label: 'Leverage / Margin', value: 'DISABLED', status: 'PROHIBITED', note: 'Strict 1x cash market only' },
-    { label: 'Live Broker Execution', value: 'DISABLED', status: 'SAFEGUARD', note: 'Paper-trading engine authority' },
+  const items = [
+    { label: 'Daily Loss Limit', val: '-5%', color: 'text-rose-400', icon: '🛑' },
+    { label: 'Daily Target', val: '+10%', color: 'text-emerald-400', icon: '🎯' },
+    { label: 'Max Trades', val: '20', color: 'text-cyan-400', icon: '⚡' },
+    { label: 'Trailing Stop', val: '0.5%', color: 'text-cyan-400', icon: '🛡️' },
+    { label: 'Auto Square-Off', val: '15:15 IST', color: 'text-amber-400', icon: '⏰' },
+    { label: 'Session', val: '09:15 - 15:30 IST', color: 'text-emerald-400', icon: '📅' },
+    { label: 'Overnight Positions', val: 'DISABLED', isBadge: true, icon: '🌙' },
+    { label: 'Leverage', val: 'DISABLED', isBadge: true, icon: '⚖️' },
+    { label: 'Live Trading', val: 'DISABLED', isBadge: true, icon: '🚫' },
   ];
 
   return (
-    <div className="bg-trade-card border border-trade-border rounded-lg p-5 shadow-lg">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
-            <span>RiskEngine Authority & Guardrails</span>
-            <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
-              Final Authority: Active
-            </span>
-          </h3>
-          <p className="text-xs text-gray-400 mt-0.5">
-            Every AI model trade order must pass RiskEngine validation before paper execution. Zero exceptions.
-          </p>
-        </div>
+    <div className="glass-panel rounded-2xl p-5 border border-white/[0.08] shadow-2xl flex flex-col h-full">
+      {/* Header */}
+      <div className="flex items-center gap-2 pb-3 border-b border-white/[0.06] mb-3">
+        <span className="text-sm">🛡️</span>
+        <h3 className="text-sm font-semibold text-gray-200">
+          Risk Engine <span className="text-xs font-normal text-gray-400">(Authoritative)</span>
+        </h3>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {rules.map((rule) => {
-          const isEnforced = rule.status === 'ENFORCED';
-          const isProhibited = rule.status === 'PROHIBITED';
-
-          return (
-            <div
-              key={rule.label}
-              className="bg-gray-900/90 border border-trade-border rounded-lg p-3.5 flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-mono text-gray-400 uppercase leading-tight">
-                    {rule.label}
-                  </span>
-                  <span
-                    className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-semibold ${
-                      isEnforced
-                        ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                        : isProhibited
-                        ? 'bg-rose-950 text-rose-300 border border-rose-800'
-                        : 'bg-blue-950 text-blue-300 border border-blue-800'
-                    }`}
-                  >
-                    {rule.status}
-                  </span>
-                </div>
-                <div className="text-base font-bold font-mono text-white mt-1.5">
-                  {rule.value}
-                </div>
-              </div>
-
-              <div className="text-[10px] font-mono text-gray-500 mt-2 pt-2 border-t border-trade-border/40">
-                {rule.note}
-              </div>
+      {/* Rules List */}
+      <div className="space-y-2.5 text-xs font-mono">
+        {items.map((it) => (
+          <div key={it.label} className="flex items-center justify-between py-0.5">
+            <div className="flex items-center gap-2 text-gray-300">
+              <span className="text-xs opacity-75">{it.icon}</span>
+              <span>{it.label}</span>
             </div>
-          );
-        })}
+
+            {it.isBadge ? (
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-500/10 text-rose-300 border border-rose-500/20">
+                {it.val}
+              </span>
+            ) : (
+              <span className={`font-semibold ${it.color}`}>
+                {it.val}
+              </span>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

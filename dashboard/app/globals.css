@@ -7,30 +7,147 @@
 }
 
 body {
-  background-color: #0B0F19;
+  background-color: #05070D;
   color: #F3F4F6;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom smooth dark scrollbar */
+/* Ambient RGB Background Layer */
+.ambient-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.ambient-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(120px);
+  opacity: 0.18;
+  mix-blend-mode: screen;
+  animation: orb-drift 30s ease-in-out infinite alternate;
+}
+
+.orb-cyan {
+  width: 650px;
+  height: 650px;
+  background: radial-gradient(circle, #00F0FF 0%, rgba(0, 240, 255, 0) 70%);
+  top: -150px;
+  left: -100px;
+  animation-duration: 25s;
+}
+
+.orb-blue {
+  width: 750px;
+  height: 750px;
+  background: radial-gradient(circle, #3B82F6 0%, rgba(59, 130, 246, 0) 70%);
+  top: 20%;
+  right: -200px;
+  animation-duration: 32s;
+  animation-delay: -5s;
+}
+
+.orb-violet {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, #8B5CF6 0%, rgba(139, 92, 246, 0) 70%);
+  bottom: -150px;
+  left: 25%;
+  animation-duration: 28s;
+  animation-delay: -10s;
+}
+
+.orb-magenta {
+  width: 550px;
+  height: 550px;
+  background: radial-gradient(circle, #EC4899 0%, rgba(236, 72, 153, 0) 70%);
+  bottom: 10%;
+  right: 15%;
+  animation-duration: 35s;
+  animation-delay: -15s;
+}
+
+@keyframes orb-drift {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(40px, -30px) scale(1.08);
+  }
+  100% {
+    transform: translate(-30px, 40px) scale(0.95);
+  }
+}
+
+/* Translucent Liquid Glass Styles */
+.glass-panel {
+  background: rgba(13, 17, 27, 0.65);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 36px 0 rgba(0, 0, 0, 0.45);
+}
+
+.glass-panel-subtle {
+  background: rgba(18, 24, 38, 0.5);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.glass-pill {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-pill-active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(139, 92, 246, 0.35) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  box-shadow: 0 0 20px -3px rgba(139, 92, 246, 0.35);
+}
+
+/* Subtle Neon Glow Rings */
+.glow-ring-cyan {
+  box-shadow: 0 0 18px -2px rgba(0, 240, 255, 0.4);
+}
+
+.glow-ring-purple {
+  box-shadow: 0 0 18px -2px rgba(139, 92, 246, 0.4);
+}
+
+.glow-ring-green {
+  box-shadow: 0 0 12px -1px rgba(16, 185, 129, 0.4);
+}
+
+/* Smooth Minimalist Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #111827;
+  background: rgba(5, 7, 13, 0.5);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #374151;
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #4B5563;
+  background: rgba(255, 255, 255, 0.3);
 }

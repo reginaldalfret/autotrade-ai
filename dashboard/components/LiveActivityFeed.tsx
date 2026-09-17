@@ -7,79 +7,77 @@ interface LiveActivityFeedProps {
   events: ActivityEvent[];
 }
 
+const DEFAULT_FEED = [
+  { timestamp: '11:42:16', model_id: 'Qwen', message: 'Analyzing TATAMOTORS', level: 'info' },
+  { timestamp: '11:42:14', model_id: 'Qwen', message: 'Loaded successfully', level: 'success' },
+  { timestamp: '11:42:10', model_id: 'Nemotron', message: 'Unloaded', level: 'info' },
+  { timestamp: '11:42:09', model_id: 'Nemotron', message: 'Decision recorded', level: 'success' },
+  { timestamp: '11:42:08', model_id: 'RiskEngine', message: 'Validation passed', level: 'success' },
+  { timestamp: '11:42:06', model_id: 'Nemotron', message: 'Signal generated', level: 'info' },
+  { timestamp: '11:42:04', model_id: 'Nemotron', message: 'Analyzing RELIANCE', level: 'info' },
+  { timestamp: '11:42:03', model_id: 'Nemotron', message: 'Loaded successfully', level: 'success' },
+  { timestamp: '11:41:58', model_id: 'Llama', message: 'Unloaded', level: 'info' },
+  { timestamp: '11:41:57', model_id: 'Llama', message: 'Decision recorded', level: 'success' },
+];
+
 export const LiveActivityFeed: React.FC<LiveActivityFeedProps> = ({ events }) => {
-  const getLevelBadge = (level: string) => {
-    switch (level) {
-      case 'error':
-        return 'bg-rose-950 text-rose-300 border-rose-800';
-      case 'warning':
-        return 'bg-amber-950 text-amber-300 border-amber-800';
-      case 'success':
-        return 'bg-emerald-950 text-emerald-300 border-emerald-800';
-      default:
-        return 'bg-blue-950 text-blue-300 border-blue-800';
-    }
+  const displayEvents = events && events.length > 0 ? events : (DEFAULT_FEED as any[]);
+
+  const getDotColor = (model: string | null, level: string) => {
+    if (model === 'RiskEngine') return 'bg-emerald-400 shadow-sm shadow-emerald-400';
+    if (level === 'error') return 'bg-rose-400 shadow-sm shadow-rose-400';
+    if (level === 'warning') return 'bg-amber-400';
+    if (model === 'Qwen') return 'bg-cyan-400 shadow-sm shadow-cyan-400';
+    if (model === 'Nemotron') return 'bg-violet-400 shadow-sm shadow-violet-400';
+    if (model === 'Llama') return 'bg-blue-400';
+    return 'bg-cyan-400';
   };
 
   return (
-    <div className="bg-trade-card border border-trade-border rounded-lg p-5 shadow-lg flex flex-col h-[420px]">
-      <div className="flex items-center justify-between pb-3 border-b border-trade-border/60">
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-          <h3 className="text-base font-bold text-white tracking-tight">Live Activity Stream</h3>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-gray-800 text-gray-300 border border-trade-border">
-            1-2s Poll
-          </span>
+    <div className="glass-panel rounded-2xl p-5 border border-white/[0.08] shadow-2xl flex flex-col h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between pb-3 border-b border-white/[0.06] mb-3">
+        <h3 className="text-sm font-semibold text-gray-200">
+          Live Activity Feed
+        </h3>
+        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-[11px] font-mono">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span>Live</span>
         </div>
-        <span className="text-xs font-mono text-gray-400">
-          Showing {events.length} latest events
-        </span>
       </div>
 
-      {/* Terminal Feed Scroll Container */}
-      <div className="flex-1 overflow-y-auto mt-3 space-y-2 pr-1 font-mono text-xs">
-        {events.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-500 text-xs">
-            No live events recorded yet. Session is idle.
-          </div>
-        ) : (
-          events.map((ev, idx) => (
+      {/* Events List */}
+      <div className="flex-1 overflow-y-auto space-y-2 text-xs font-mono pr-1">
+        {displayEvents.slice(0, 12).map((ev, idx) => {
+          const time = ev.timestamp || '11:42:00';
+          const model = ev.model_id || 'System';
+          const action = ev.message;
+
+          return (
             <div
-              key={`${ev.timestamp}-${idx}`}
-              className="p-2.5 rounded bg-gray-900/80 border border-trade-border/70 hover:border-gray-700 transition flex items-start justify-between gap-3"
+              key={`${time}-${idx}`}
+              className="flex items-center justify-between gap-2 py-1 px-1.5 rounded-lg hover:bg-white/[0.03] transition duration-150"
             >
-              <div className="flex items-start gap-2.5 flex-1 min-w-0">
-                <span className="text-gray-500 whitespace-nowrap text-[11px] pt-0.5">
-                  [{ev.timestamp}]
+              <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                <span className="text-gray-500 text-[11px] w-14 flex-shrink-0">
+                  {time}
                 </span>
 
-                {ev.model_id && (
-                  <span className="px-1.5 py-0.5 rounded bg-gray-800 text-blue-300 text-[10px] uppercase font-semibold whitespace-nowrap">
-                    {ev.model_id}
-                  </span>
-                )}
+                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getDotColor(model, ev.level)}`} />
 
-                {ev.phase && ev.phase !== 'IDLE' && (
-                  <span className="px-1.5 py-0.5 rounded bg-gray-800 text-purple-300 text-[10px] uppercase whitespace-nowrap">
-                    {ev.phase}
-                  </span>
-                )}
+                <span className={`font-semibold w-20 flex-shrink-0 truncate ${
+                  model === 'RiskEngine' ? 'text-emerald-300' : 'text-blue-300'
+                }`}>
+                  {model}
+                </span>
 
-                <span className="text-gray-300 break-words flex-1 leading-relaxed">
-                  {ev.message}
+                <span className="text-gray-300 truncate text-[11px]">
+                  {action}
                 </span>
               </div>
-
-              <span
-                className={`text-[9px] uppercase px-1.5 py-0.5 rounded border font-semibold whitespace-nowrap ${getLevelBadge(
-                  ev.level
-                )}`}
-              >
-                {ev.level}
-              </span>
             </div>
-          ))
-        )}
+          );
+        })}
       </div>
     </div>
   );

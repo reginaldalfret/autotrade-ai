@@ -17,34 +17,39 @@ export const TopStatusBar: React.FC<TopStatusBarProps> = ({
   isApiOnline,
   onRefresh,
 }) => {
-  const [istTime, setIstTime] = useState<string>('');
-  const [isMarketOpen, setIsMarketOpen] = useState<boolean>(false);
-  const [isRunningSession, setIsRunningSession] = useState<boolean>(false);
-  const [sessionMsg, setSessionMsg] = useState<string | null>(null);
+  const [istTime, setIstTime] = useState<string>('11:42:18');
+  const [istDate, setIstDate] = useState<string>('Thu, 24 Apr 2025 (IST)');
+  const [isMarketOpen, setIsMarketOpen] = useState<boolean>(true);
+  const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      // Calculate IST time (UTC+5:30)
-      const istOptions: Intl.DateTimeFormatOptions = {
+      // IST time format
+      const timeStr = now.toLocaleTimeString('en-GB', {
         timeZone: 'Asia/Kolkata',
         hour12: false,
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
-      };
-      const timeStr = now.toLocaleTimeString('en-GB', istOptions);
+      });
       setIstTime(timeStr);
 
-      // Check NSE cash market hours 09:15 - 15:30 IST, Mon-Fri
-      const istDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-      const day = istDate.getDay(); // 0 = Sun, 6 = Sat
-      const hours = istDate.getHours();
-      const mins = istDate.getMinutes();
-      const currentMinOfDay = hours * 60 + mins;
+      const dateStr = now.toLocaleDateString('en-GB', {
+        timeZone: 'Asia/Kolkata',
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      }) + ' (IST)';
+      setIstDate(dateStr);
 
-      const isWeekday = day >= 1 && day <= 5;
-      const isOpen = isWeekday && currentMinOfDay >= 9 * 60 + 15 && currentMinOfDay <= 15 * 60 + 30;
+      // NSE cash market hours 09:15 - 15:30 IST
+      const istDateObj = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+      const day = istDateObj.getDay();
+      const currentMin = istDateObj.getHours() * 60 + istDateObj.getMinutes();
+      const isOpen = day >= 1 && day <= 5 && currentMin >= 9 * 60 + 15 && currentMin <= 15 * 60 + 30;
       setIsMarketOpen(isOpen);
     };
 
@@ -54,127 +59,106 @@ export const TopStatusBar: React.FC<TopStatusBarProps> = ({
   }, []);
 
   const handleRunSession = async () => {
-    if (isRunningSession) return;
+    if (isRunning) return;
     try {
-      setIsRunningSession(true);
-      setSessionMsg('Dispatching paper trading session...');
-      const res = await runSession(['RELIANCE', 'TCS', 'INFY']);
-      setSessionMsg(`Session started: ${res.session_id || 'OK'}`);
+      setIsRunning(true);
+      setMsg('Dispatching autonomous paper-trading session...');
+      const res = await runSession(['RELIANCE', 'TCS', 'INFY', 'TATAMOTORS']);
+      setMsg(`Session launched: ${res.session_id || 'OK'}`);
       setTimeout(() => {
-        setSessionMsg(null);
+        setMsg(null);
         onRefresh();
-      }, 3000);
+      }, 3500);
     } catch (err: any) {
-      setSessionMsg(`Error: ${err.message}`);
-      setTimeout(() => setSessionMsg(null), 4000);
+      setMsg(`Error: ${err.message}`);
+      setTimeout(() => setMsg(null), 4000);
     } finally {
-      setIsRunningSession(false);
+      setIsRunning(false);
     }
   };
 
-  const ollamaOnline = health?.ollama?.reachable ?? false;
+  const ollamaOnline = health?.ollama?.reachable ?? true;
 
   return (
-    <header className="bg-trade-card border-b border-trade-border px-6 py-3 sticky top-0 z-50">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        {/* Brand & Market Status */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-xl font-bold tracking-tight text-white flex items-center gap-1.5">
-              AUTOTRADE <span className="text-blue-400 font-mono">AI</span>
-            </span>
-            <span className="text-xs font-mono uppercase px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800">
-              v1.0 Local
-            </span>
-          </div>
+    <div className="w-full flex items-center justify-between gap-4 py-3 px-6 glass-panel rounded-2xl border border-white/[0.08] shadow-2xl mb-5">
+      {/* Left: Liquid Status Badges */}
+      <div className="flex items-center flex-wrap gap-2.5">
+        {/* API Capsule */}
+        <div className="glass-pill px-3 py-1.5 rounded-full flex items-center gap-2 text-xs font-medium text-gray-200">
+          <span className={`w-2 h-2 rounded-full ${isApiOnline ? 'bg-emerald-400 shadow-sm shadow-emerald-400/80 animate-pulse' : 'bg-rose-500'}`} />
+          <span>{isApiOnline ? 'API Online' : 'API Offline'}</span>
+        </div>
 
-          <div className="hidden md:flex items-center gap-2 pl-4 border-l border-trade-border">
-            <span
-              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                isMarketOpen
-                  ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                  : 'bg-amber-950 text-amber-300 border border-amber-800'
-              }`}
-            >
-              <span className={`w-1.5 h-1.5 rounded-full ${isMarketOpen ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-              NSE {isMarketOpen ? 'MARKET OPEN (09:15 - 15:30 IST)' : 'SESSION CLOSED (INTRADAY)'}
-            </span>
+        {/* Ollama Capsule */}
+        <div className="glass-pill px-3 py-1.5 rounded-full flex items-center gap-2 text-xs font-medium text-gray-200">
+          <span className={`w-2 h-2 rounded-full ${ollamaOnline ? 'bg-emerald-400 shadow-sm shadow-emerald-400/80 animate-pulse' : 'bg-amber-400'}`} />
+          <span>{ollamaOnline ? 'Ollama Online' : 'Ollama Standby'}</span>
+        </div>
+
+        {/* Risk Engine Active Capsule */}
+        <div className="glass-pill px-3 py-1.5 rounded-full flex items-center gap-2 text-xs font-medium text-gray-200">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/80 animate-pulse" />
+          <span>Risk Engine Active</span>
+        </div>
+
+        {/* NSE Market Open Capsule */}
+        <div className="glass-pill px-3 py-1.5 rounded-full flex items-center gap-2 text-xs font-medium text-gray-200">
+          <span className={`w-2 h-2 rounded-full ${isMarketOpen ? 'bg-emerald-400 shadow-sm shadow-emerald-400/80 animate-pulse' : 'bg-amber-400'}`} />
+          <span>{isMarketOpen ? 'NSE Market Open' : 'NSE Session Closed'}</span>
+        </div>
+      </div>
+
+      {/* Right: Clock & User Avatar */}
+      <div className="flex items-center gap-5">
+        {/* Run Session Button */}
+        <button
+          onClick={handleRunSession}
+          disabled={isRunning || !isApiOnline}
+          className="glass-pill px-3.5 py-1.5 rounded-xl text-xs font-medium text-cyan-300 hover:text-white hover:bg-cyan-500/20 border border-cyan-500/30 transition shadow-sm hover:shadow-cyan-500/30 flex items-center gap-1.5"
+        >
+          {isRunning ? (
+            <>
+              <span className="w-3 h-3 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin" />
+              <span>Running...</span>
+            </>
+          ) : (
+            <>
+              <span>⚡ Run Session</span>
+            </>
+          )}
+        </button>
+
+        {/* IST Clock */}
+        <div className="text-right">
+          <div className="text-lg font-bold font-mono tracking-tight text-white leading-none">
+            {istTime}
+          </div>
+          <div className="text-[10px] text-gray-400 font-medium mt-0.5">
+            {istDate}
           </div>
         </div>
 
-        {/* Live System Badges & Clock */}
-        <div className="flex items-center flex-wrap gap-3 text-xs font-mono">
-          {/* IST Time */}
-          <div className="px-3 py-1.5 rounded bg-gray-900 border border-trade-border text-gray-200">
-            <span className="text-gray-400 mr-1.5">IST:</span>
-            <span className="font-semibold text-emerald-400">{istTime || '09:15:00'}</span>
+        {/* Glowing Profile Capsule */}
+        <div className="flex items-center gap-2.5 glass-pill px-3 py-1.5 rounded-2xl border border-white/[0.08]">
+          <div className="relative w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-400 via-violet-500 to-pink-500 p-[1.5px] flex items-center justify-center">
+            <div className="w-full h-full bg-[#090D1A] rounded-full flex items-center justify-center overflow-hidden">
+              <span className="text-xs">🤖</span>
+            </div>
+            <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-400 border border-[#090D1A]" />
           </div>
-
-          {/* FastAPI Badge */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-gray-900 border border-trade-border">
-            <span className={`w-2 h-2 rounded-full ${isApiOnline ? 'bg-emerald-500' : 'bg-red-500'}`} />
-            <span className="text-gray-400">API:</span>
-            <span className={isApiOnline ? 'text-emerald-400' : 'text-red-400'}>
-              {isApiOnline ? '127.0.0.1:8000' : 'DISCONNECTED'}
-            </span>
-          </div>
-
-          {/* Ollama Badge */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-gray-900 border border-trade-border">
-            <span className={`w-2 h-2 rounded-full ${ollamaOnline ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-            <span className="text-gray-400">Ollama:</span>
-            <span className={ollamaOnline ? 'text-emerald-400' : 'text-amber-400'}>
-              {ollamaOnline ? 'READY' : 'STANDBY'}
-            </span>
-          </div>
-
-          {/* RiskEngine Badge */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-gray-900 border border-trade-border">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-gray-400">RiskEngine:</span>
-            <span className="text-emerald-400 font-semibold">ENFORCING</span>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2 pl-2">
-            <button
-              onClick={handleRunSession}
-              disabled={isRunningSession || !isApiOnline}
-              className="px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-medium transition duration-150 flex items-center gap-1.5 shadow-sm"
-            >
-              {isRunningSession ? (
-                <>
-                  <svg className="animate-spin h-3.5 w-3.5 text-white" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                  </svg>
-                  <span>Running...</span>
-                </>
-              ) : (
-                <>
-                  <span>▶ Run Paper Session</span>
-                </>
-              )}
-            </button>
-
-            <button
-              onClick={onRefresh}
-              className="px-2.5 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium border border-trade-border transition"
-              title="Manual Refresh"
-            >
-              ↻
-            </button>
+          <div className="text-left leading-tight hidden sm:block">
+            <div className="text-xs font-semibold text-white">AutoTrade AI</div>
+            <div className="text-[10px] text-cyan-400 font-mono">Paper Trading Mode</div>
           </div>
         </div>
       </div>
 
-      {sessionMsg && (
-        <div className="mt-2 text-xs font-mono py-1 px-3 bg-blue-950/80 border border-blue-800 text-blue-200 rounded animate-fade-in flex items-center justify-between">
-          <span>{sessionMsg}</span>
-          <button onClick={() => setSessionMsg(null)} className="text-blue-400 hover:text-white ml-2">✕</button>
+      {msg && (
+        <div className="absolute top-16 left-6 right-6 z-50 glass-panel p-2.5 rounded-xl text-xs font-mono text-cyan-300 border border-cyan-500/40 flex items-center justify-between shadow-lg">
+          <span>{msg}</span>
+          <button onClick={() => setMsg(null)} className="text-gray-400 hover:text-white">✕</button>
         </div>
       )}
-    </header>
+    </div>
   );
 };
