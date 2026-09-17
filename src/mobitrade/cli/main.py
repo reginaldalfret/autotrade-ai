@@ -60,5 +60,34 @@ def validate():
         click.echo(f"configs/models.yaml: OK ({len(models.get('models', []))} models)")
     click.echo("System configuration validated successfully.")
 
+@cli.command()
+@click.option("--host", default="127.0.0.1", help="Host interface to bind (default: 127.0.0.1)")
+@click.option("--port", default=None, type=int, help="Port to listen on (default: 8000)")
+@click.option("--reload", is_flag=True, default=False, help="Enable auto-reload")
+def api(host, port, reload):
+    """Start the AutoTrade AI Local Operator API server."""
+    import socket
+    import uvicorn
+    if port is None:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind((host, 8000))
+                port = 8000
+            except OSError:
+                for cand in [8008, 8080, 8001]:
+                    try:
+                        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s2:
+                            s2.bind((host, cand))
+                            port = cand
+                            click.secho(f"[AutoTrade AI] Notice: Port 8000 occupied, auto-selecting port {cand}", fg="yellow")
+                            break
+                    except OSError:
+                        continue
+                if port is None:
+                    port = 8000
+
+    click.secho(f"Starting AutoTrade AI Local Operator API on http://{host}:{port}", fg="green", bold=True)
+    uvicorn.run("mobitrade.api.app:create_app", host=host, port=port, factory=True, reload=reload, log_level="info")
+
 if __name__ == "__main__":
     cli()

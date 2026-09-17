@@ -80,6 +80,55 @@ mobitrade report validate 2026-09-11
 
 ---
 
+## Local Operator API (Phase 9)
+
+AutoTrade AI provides a local-first, deterministic FastAPI control layer bound strictly to `127.0.0.1`. It exposes the paper trading engine, portfolio, positions, risk boundaries, performance analytics, PDF reports, and cryptographic audit logs for local operator / agent integration.
+
+### Startup Commands
+
+```bash
+# Via autotrade_ai wrapper:
+python -m autotrade_ai.api
+
+# Or via mobitrade module:
+python -m mobitrade.api
+
+# Or via CLI command:
+mobitrade api --host 127.0.0.1 --port 8000
+```
+
+### Available Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/health` | Market session status (09:15–15:30 IST), Ollama LLM provider status, DB connectivity |
+| `GET` | `/models` | List configured tournament models and runtime inference parameters |
+| `GET` | `/portfolio` | Aggregated paper trading portfolio, balances, and isolated model accounts |
+| `GET` | `/positions` | Active open paper positions across models |
+| `GET` | `/trades` | Completed trade journal with gross/net P&L and statutory cost breakdowns |
+| `GET` | `/risk` | Authoritative RiskEngine parameters (-5% hard loss, 20 max trades, 15:15 IST square-off) |
+| `GET` | `/analytics` | Computed session analytics, win rates, drawdown, and model leaderboard |
+| `GET` | `/reports` | Generated daily PDF trading reports with SHA-256 integrity fingerprints |
+| `GET` | `/audit/verify` | Cryptographic SHA-256 hash chain verification of tamper-evident audit log |
+| `POST` | `/session/run` | Execute deterministic intraday paper trading replay under strict RiskEngine enforcement |
+
+### Example Queries
+
+```bash
+# Query health status
+curl -s http://127.0.0.1:8000/health
+
+# Query risk safety boundaries
+curl -s http://127.0.0.1:8000/risk
+
+# Execute safe paper session replay
+curl -s -X POST http://127.0.0.1:8000/session/run \
+  -H "Content-Type: application/json" \
+  -d '{"session_date": "2026-09-17", "symbol": "TATAMOTORS", "mock_llm": true}'
+```
+
+---
+
 ## Disclaimer
 
 > [!NOTE]
