@@ -11,6 +11,8 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 
 from fastapi import APIRouter, Request, HTTPException, Query, status
+from fastapi.responses import FileResponse
+from mobitrade.logging.runtime_monitor import runtime_monitor
 
 from mobitrade.api.schemas import (
     HealthResponse,
@@ -615,5 +617,41 @@ def run_learning(request: Request, payload: Optional[LearningRunRequest] = None)
         promoted_strategy=result["promoted_strategy"],
         validation_reports=result["validation_reports"],
         message="Self-learning evaluation cycle executed successfully.",
+    )
+
+
+@router.get("/runtime/status", tags=["Observability"])
+def get_runtime_status():
+    """Snapshot of active AI model, execution phase (LOAD, INFERENCE, VALIDATION, RECORD, UNLOAD), and timing."""
+    return runtime_monitor.get_runtime_status()
+
+
+@router.get("/activity", tags=["Observability"])
+def get_activity_feed(limit: int = Query(50, ge=1, le=200)):
+    """Continuously updating live event feed (newest events first)."""
+    events = runtime_monitor.get_recent_events(limit=limit)
+    return {"count": len(events), "events": events}
+
+
+@router.get("/activity/current", tags=["Observability"])
+def get_activity_current():
+    """Combined snapshot of current AI model activity and recent event stream."""
+    return runtime_monitor.get_current_activity()
+
+
+@router.get("/reports/{report_id}/download", tags=["Reports"])
+def download_report(request: Request, report_id: str):
+    """Download or view generated institutional PDF trading report."""
+    db_path = _get_db_path(request)
+    repo = PaperDatabaseRepository(db_path=db_path)
+    report = repo.get_report(report_id)
+    if not report:
+        report = repo.get_report_by_date(report_id)
+    if not report or not os.path.exists(report["file_path"]):
+        raise HTTPException(status_code=404, detail="Report file not found")
+    return FileResponse(
+        report["file_path"],
+        media_type="application/pdf",
+        filename=os.path.basename(report["file_path"]),
     )
 

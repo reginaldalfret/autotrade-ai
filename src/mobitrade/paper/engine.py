@@ -15,6 +15,7 @@ from mobitrade.risk.trailing_stop import TrailingStopEngine
 from mobitrade.execution.paper_broker import PaperBroker
 from mobitrade.portfolio.manager import PortfolioManager
 from mobitrade.paper.persistence import PaperDatabaseRepository
+from mobitrade.logging.runtime_monitor import runtime_monitor
 
 DEFAULT_MODELS = ["nemotron", "qwen", "gemma", "llama", "granite", "phi", "smollm", "falcon"]
 
@@ -192,6 +193,7 @@ class PaperTradingEngine:
             )
 
             current_open_positions = len(portfolio.positions)
+            runtime_monitor.set_active(mid, "VALIDATION", f"RiskEngine evaluating {mid} trade proposal for {snapshot.symbol}", session_id, snapshot.symbol)
             risk_check = self.risk_engine.evaluate_decision(
                 decision=trade_decision,
                 portfolio=portfolio.get_snapshot(session_id, snapshot.decision_timestamp),
@@ -201,6 +203,7 @@ class PaperTradingEngine:
             )
 
             if risk_check.decision == RiskDecision.REJECTED:
+                runtime_monitor.record_event(f"RiskEngine REJECTED {mid} proposal: {risk_check.reason}", model_id=mid, phase="VALIDATION", level="warn")
                 self.persistence.record_audit_event(
                     session_id=session_id,
                     model_id=mid,
@@ -208,9 +211,11 @@ class PaperTradingEngine:
                     payload={"rule": risk_check.rule_name, "reason": risk_check.reason},
                     timestamp=snapshot.decision_timestamp
                 )
+                runtime_monitor.set_idle()
                 return None
 
             # 3. Submit order to PaperBroker
+            runtime_monitor.set_active(mid, "RECORD", f"Executing paper order for {mid} ({qty} {snapshot.symbol} @ ₹{current_market_price:.2f})", session_id, snapshot.symbol)
             order_req = OrderRequest(
                 model_id=mid,
                 account_id=account.account_id,
@@ -242,6 +247,9 @@ class PaperTradingEngine:
                 payload={"order_id": order.order_id, "fill_price": execution.fill_price, "qty": qty},
                 timestamp=snapshot.decision_timestamp
             )
+            runtime_monitor.record_event(f"Order FILLED: {mid} bought {qty} {snapshot.symbol} @ ₹{execution.fill_price:.2f}", model_id=mid, phase="RECORD", level="success")
+            runtime_monitor.set_active(mid, "UNLOAD", f"{mid} trade logged; model unloaded", session_id, snapshot.symbol)
+            runtime_monitor.set_idle()
             return trade
 
         # 4. Process SELL decision (close existing position)

@@ -61,3 +61,8 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Dashboard (Next.js)
+dashboard/node_modules/
+dashboard/.next/
+dashboard/out/
