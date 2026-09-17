@@ -129,6 +129,45 @@ curl -s -X POST http://127.0.0.1:8000/session/run \
 
 ---
 
+## Hermes Operator Integration (Phase 10)
+
+Hermes operates as an external supervisor/operator tool layer interacting with AutoTrade AI exclusively through the localhost API (`127.0.0.1:8000`). Hermes has no direct database access and cannot bypass RiskEngine safety boundaries.
+
+### Operational Boundaries
+
+- **Segment**: NSE Cash Intraday Only (09:15–15:30 IST)
+- **Cutoff**: 15:15 IST mandatory auto square-off
+- **Risk Hard Stop**: -5.0% daily maximum loss limit
+- **Trade Cap**: Maximum 20 completed trades per model per session
+- **Overnight**: Zero overnight positions allowed
+- **Authority**: RiskEngine is deterministic and final; background loops prohibited
+
+### Usage in Hermes
+
+```python
+from autotrade_ai.hermes import AutoTradeOperatorClient, get_hermes_tools, run_daily_session_workflow
+
+# 1. Connect client to localhost API
+client = AutoTradeOperatorClient(base_url="http://127.0.0.1:8000")
+health = client.get_health()
+risk = client.get_risk()
+
+# 2. Register tools with Hermes agent
+tools = get_hermes_tools(base_url="http://127.0.0.1:8000")
+tool_definitions = tools.get_tool_definitions()
+
+# 3. Standard operator workflow ("Run today's paper session for AutoTrade AI")
+summary = run_daily_session_workflow(
+    session_date="2026-09-17",
+    symbol="TATAMOTORS",
+    mock_llm=True,
+    client=client
+)
+print(summary["operator_message"])
+```
+
+---
+
 ## Disclaimer
 
 > [!NOTE]
