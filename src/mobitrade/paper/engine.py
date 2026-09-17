@@ -16,6 +16,7 @@ from mobitrade.execution.paper_broker import PaperBroker
 from mobitrade.portfolio.manager import PortfolioManager
 from mobitrade.paper.persistence import PaperDatabaseRepository
 from mobitrade.logging.runtime_monitor import runtime_monitor
+from mobitrade.transport.redis_service import redis_service, RedisStreamName
 
 DEFAULT_MODELS = ["nemotron", "qwen", "gemma", "llama", "granite", "phi", "smollm", "falcon"]
 
@@ -93,6 +94,16 @@ class PaperTradingEngine:
                 payload={"starting_balance": account.starting_balance, "date": session_date},
                 timestamp=datetime.now()
             )
+        redis_service.publish(
+            RedisStreamName.ACTIVITY,
+            {
+                "event_type": "SESSION_STARTED",
+                "session_id": session_id,
+                "session_date": session_date,
+                "models_count": len(self.accounts),
+            },
+            event_id=f"start_{session_id}",
+        )
 
     def process_model_decision(
         self,
@@ -194,12 +205,36 @@ class PaperTradingEngine:
 
             current_open_positions = len(portfolio.positions)
             runtime_monitor.set_active(mid, "VALIDATION", f"RiskEngine evaluating {mid} trade proposal for {snapshot.symbol}", session_id, snapshot.symbol)
+            redis_service.publish_event(
+                RedisStreamName.TRADES,
+                "ORDER_REQUEST",
+                {
+                    "model_id": mid,
+                    "symbol": snapshot.symbol,
+                    "side": "BUY",
+                    "qty": qty,
+                    "price": current_market_price,
+                    "session_id": session_id,
+                },
+                event_id=f"req_{decision_record.decision_id}",
+            )
             risk_check = self.risk_engine.evaluate_decision(
                 decision=trade_decision,
                 portfolio=portfolio.get_snapshot(session_id, snapshot.decision_timestamp),
                 account=account,
                 current_open_positions=current_open_positions,
                 timestamp=snapshot.decision_timestamp
+            )
+            redis_service.publish_event(
+                RedisStreamName.TRADES,
+                "ORDER_VALIDATED",
+                {
+                    "model_id": mid,
+                    "symbol": snapshot.symbol,
+                    "decision": risk_check.decision.value,
+                    "reason": risk_check.reason,
+                    "session_id": session_id,
+                },
             )
 
             if risk_check.decision == RiskDecision.REJECTED:
@@ -247,6 +282,34 @@ class PaperTradingEngine:
                 payload={"order_id": order.order_id, "fill_price": execution.fill_price, "qty": qty},
                 timestamp=snapshot.decision_timestamp
             )
+            redis_service.publish_event(
+                RedisStreamName.TRADES,
+                "ORDER_FILLED",
+                {
+                    "order_id": order.order_id,
+                    "model_id": mid,
+                    "symbol": snapshot.symbol,
+                    "side": "BUY",
+                    "qty": qty,
+                    "fill_price": execution.fill_price,
+                    "session_id": session_id,
+                },
+                event_id=order.order_id,
+            )
+            if trade:
+                redis_service.publish_event(
+                    RedisStreamName.TRADES,
+                    "POSITION_OPENED",
+                    {
+                        "trade_id": trade.trade_id,
+                        "model_id": mid,
+                        "symbol": snapshot.symbol,
+                        "entry_price": trade.entry_price,
+                        "quantity": trade.quantity,
+                        "session_id": session_id,
+                    },
+                    event_id=trade.trade_id,
+                )
             runtime_monitor.record_event(f"Order FILLED: {mid} bought {qty} {snapshot.symbol} @ ₹{execution.fill_price:.2f}", model_id=mid, phase="RECORD", level="success")
             runtime_monitor.set_active(mid, "UNLOAD", f"{mid} trade logged; model unloaded", session_id, snapshot.symbol)
             runtime_monitor.set_idle()
@@ -285,6 +348,18 @@ class PaperTradingEngine:
                     payload={"symbol": snapshot.symbol, "net_pnl": trade.net_pnl if trade else 0.0},
                     timestamp=snapshot.decision_timestamp
                 )
+                redis_service.publish(
+                    RedisStreamName.TRADES,
+                    {
+                        "event_type": "POSITION_CLOSED",
+                        "model_id": mid,
+                        "symbol": snapshot.symbol,
+                        "net_pnl": trade.net_pnl if trade else 0.0,
+                        "session_id": session_id,
+                        "timestamp": snapshot.decision_timestamp.isoformat() if hasattr(snapshot.decision_timestamp, 'isoformat') else str(snapshot.decision_timestamp),
+                    },
+                    event_id=f"close_{trade.trade_id}" if trade else f"close_{mid}_{snapshot.symbol}_{session_id}",
+                )
                 return trade
 
         return None
@@ -295,6 +370,16 @@ class PaperTradingEngine:
         1. Daily target (+10%) & stop loss (-5%) shutdown.
         2. Dynamic trailing-stop triggering.
         """
+        redis_service.publish(
+            RedisStreamName.MARKET,
+            {
+                "event_type": "PRICES_UPDATED",
+                "session_id": session_id,
+                "prices": current_prices,
+                "timestamp": timestamp.isoformat() if hasattr(timestamp, 'isoformat') else str(timestamp),
+            },
+            event_id=f"mkt_{session_id}_{timestamp.strftime('%H%M%S') if hasattr(timestamp, 'strftime') else timestamp}",
+        )
         for mid in self.accounts:
             portfolio = self.portfolios[mid]
             account = self.accounts[mid]
@@ -325,6 +410,18 @@ class PaperTradingEngine:
                         payload={"equity": portfolio.total_equity, "target": account.daily_target_equity},
                         timestamp=timestamp
                     )
+                    redis_service.publish(
+                        RedisStreamName.ACTIVITY,
+                        {
+                            "event_type": "DAILY_TARGET_REACHED",
+                            "model_id": mid,
+                            "equity": portfolio.total_equity,
+                            "target": account.daily_target_equity,
+                            "session_id": session_id,
+                            "timestamp": timestamp.isoformat() if hasattr(timestamp, 'isoformat') else str(timestamp),
+                        },
+                        event_id=f"target_{mid}_{session_id}",
+                    )
                     self.persistence.save_account(account)
                     continue
 
@@ -347,6 +444,18 @@ class PaperTradingEngine:
                         event_type="DAILY_STOP_TRIGGERED",
                         payload={"equity": portfolio.total_equity, "stop": account.daily_stop_equity},
                         timestamp=timestamp
+                    )
+                    redis_service.publish(
+                        RedisStreamName.ACTIVITY,
+                        {
+                            "event_type": "DAILY_STOP_TRIGGERED",
+                            "model_id": mid,
+                            "equity": portfolio.total_equity,
+                            "stop": account.daily_stop_equity,
+                            "session_id": session_id,
+                            "timestamp": timestamp.isoformat() if hasattr(timestamp, 'isoformat') else str(timestamp),
+                        },
+                        event_id=f"dstop_{mid}_{session_id}",
                     )
                     self.persistence.save_account(account)
                     continue
@@ -372,6 +481,18 @@ class PaperTradingEngine:
                 trail_stop_floor = peak_px * (1.0 - self.trailing_distance_pct)
                 if trade.trailing_stop is None or trail_stop_floor > trade.trailing_stop:
                     trade.trailing_stop = trail_stop_floor
+                    redis_service.publish(
+                        RedisStreamName.TRADES,
+                        {
+                            "event_type": "POSITION_UPDATED",
+                            "model_id": mid,
+                            "symbol": sym,
+                            "peak_price": peak_px,
+                            "trailing_stop": trail_stop_floor,
+                            "session_id": session_id,
+                        },
+                        event_id=f"trail_{trade.trade_id}_{peak_px:.2f}",
+                    )
 
                 # Check if stop triggered
                 is_stop_loss = trade.initial_stop is not None and curr_px <= trade.initial_stop
@@ -400,6 +521,20 @@ class PaperTradingEngine:
                         payload={"reason": reason.value, "fill_price": execution.fill_price, "net_pnl": trade.net_pnl},
                         timestamp=timestamp
                     )
+                    redis_service.publish(
+                        RedisStreamName.TRADES,
+                        {
+                            "event_type": "STOP_TRIGGERED",
+                            "model_id": mid,
+                            "symbol": sym,
+                            "reason": reason.value,
+                            "fill_price": execution.fill_price,
+                            "net_pnl": trade.net_pnl,
+                            "session_id": session_id,
+                            "timestamp": timestamp.isoformat() if hasattr(timestamp, 'isoformat') else str(timestamp),
+                        },
+                        event_id=f"stop_{trade.trade_id}",
+                    )
 
     def execute_auto_square_off(self, current_prices: Dict[str, float], timestamp: datetime, session_id: str) -> None:
         """
@@ -427,6 +562,18 @@ class PaperTradingEngine:
                 event_type="MARKET_CLOSE_SQUARE_OFF",
                 payload={"closed_trades_count": len(closed), "final_equity": portfolio.total_equity},
                 timestamp=timestamp
+            )
+            redis_service.publish(
+                RedisStreamName.TRADES,
+                {
+                    "event_type": "SQUARE_OFF",
+                    "model_id": mid,
+                    "closed_trades_count": len(closed),
+                    "final_equity": portfolio.total_equity,
+                    "session_id": session_id,
+                    "timestamp": timestamp.isoformat() if hasattr(timestamp, 'isoformat') else str(timestamp),
+                },
+                event_id=f"sqoff_{mid}_{session_id}",
             )
             self.persistence.save_account(account)
 

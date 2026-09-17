@@ -17,6 +17,7 @@ from mobitrade.llm.base import LocalLLMProvider
 from mobitrade.llm.validator import DecisionValidator
 from mobitrade.llm.persistence import LLMDatabaseRepository
 from mobitrade.config.settings import load_yaml_config
+from mobitrade.transport.redis_service import redis_service, RedisStreamName
 
 class SequentialLLMScheduler:
     """
@@ -115,11 +116,23 @@ class SequentialLLMScheduler:
         try:
             # 1. Load Model (ensures single residency in VRAM)
             load_time_ms = self.provider.load_model(tag)
+            redis_service.publish_event(
+                RedisStreamName.DECISIONS,
+                "MODEL_LOAD",
+                {"model_id": model_cfg.id, "tag": tag, "symbol": snapshot.symbol, "load_time_ms": load_time_ms}
+            )
+            redis_service.set_cache("autotrade:cache:active_model", model_cfg.id, ttl_seconds=30)
 
             # 2. Generate with retries & timeout
             raw_response = None
             gen_res = None
             last_err = None
+
+            redis_service.publish_event(
+                RedisStreamName.DECISIONS,
+                "INFERENCE_START",
+                {"model_id": model_cfg.id, "symbol": snapshot.symbol}
+            )
 
             for attempt in range(self.max_retries + 1):
                 try:
@@ -146,9 +159,20 @@ class SequentialLLMScheduler:
                             str(e), (time.perf_counter() - start_perf) * 1000.0, load_time_ms
                         )
 
+            redis_service.publish_event(
+                RedisStreamName.DECISIONS,
+                "INFERENCE_COMPLETE",
+                {"model_id": model_cfg.id, "symbol": snapshot.symbol}
+            )
+
             # 3. Output Validation
             is_valid, status, reason, parsed_data = self.validator.validate_response(
                 raw_response, snapshot.symbol, snapshot.snapshot_id, current_price
+            )
+            redis_service.publish_event(
+                RedisStreamName.DECISIONS,
+                "VALIDATION",
+                {"model_id": model_cfg.id, "symbol": snapshot.symbol, "is_valid": is_valid, "status": status.value, "reason": reason}
             )
 
             end_perf = time.perf_counter()
@@ -188,6 +212,19 @@ class SequentialLLMScheduler:
                     created_at=end_ts
                 )
 
+            redis_service.publish_event(
+                RedisStreamName.DECISIONS,
+                "DECISION_RECORDED",
+                {
+                    "decision_id": decision_id,
+                    "model_id": model_cfg.id,
+                    "symbol": snapshot.symbol,
+                    "action": parsed_data["action"].upper(),
+                    "confidence": float(parsed_data["confidence"]),
+                },
+                event_id=decision_id,
+            )
+
             return LLMDecisionRecord(
                 decision_id=decision_id,
                 model_id=model_cfg.id,
@@ -213,6 +250,11 @@ class SequentialLLMScheduler:
             # 4. Explicit Unload (Always executed in finally block)
             try:
                 unload_time_ms = self.provider.unload_model(tag)
+                redis_service.publish_event(
+                    RedisStreamName.DECISIONS,
+                    "MODEL_UNLOAD",
+                    {"model_id": model_cfg.id, "tag": tag, "unload_time_ms": unload_time_ms}
+                )
             except Exception:
                 pass
 

@@ -179,6 +179,23 @@ class OpportunityScanner:
 
         # Rank accepted candidates
         ranked_accepted = self.rank_candidates(accepted)
+        try:
+            from mobitrade.transport.redis_service import redis_service, RedisStreamName
+            redis_service.publish(
+                RedisStreamName.SIGNALS,
+                {
+                    "event_type": "SCAN_COMPLETED",
+                    "decision_timestamp": dec_ts.isoformat(),
+                    "total_universe": len(universe),
+                    "accepted_count": len(ranked_accepted),
+                    "rejected_count": len(rejected),
+                    "top_symbol": ranked_accepted[0].symbol if ranked_accepted else None,
+                    "top_score": ranked_accepted[0].opportunity_score if ranked_accepted else 0.0,
+                },
+                event_id=f"scan_{dec_ts.strftime('%Y%m%d_%H%M%S')}",
+            )
+        except Exception:
+            pass
         return ranked_accepted, rejected
 
     def rank_candidates(

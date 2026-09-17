@@ -52,6 +52,7 @@ from mobitrade.domain.snapshot import MarketSnapshot
 from mobitrade.domain.data_models import Timeframe
 from mobitrade.domain.enums import Action
 from mobitrade.domain.llm_models import LLMDecisionRecord, LLMAction, ValidationStatus
+from mobitrade.transport.redis_service import redis_service
 
 router = APIRouter()
 
@@ -654,4 +655,17 @@ def download_report(request: Request, report_id: str):
         media_type="application/pdf",
         filename=os.path.basename(report["file_path"]),
     )
+
+
+@router.get("/redis/status", tags=["Observability", "Transport"])
+def get_redis_status():
+    """Inspect Redis connection health, stream lengths, consumer groups, and fallback mode."""
+    return redis_service.get_status()
+
+
+@router.get("/runtime/stream-status", tags=["Observability", "Transport"])
+def get_runtime_stream_status():
+    """Detailed status of all Redis event streams and consumer groups."""
+    return redis_service.get_stream_status()
+
 

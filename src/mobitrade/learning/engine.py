@@ -19,6 +19,7 @@ from mobitrade.learning.analysis import TradeAnalysisEngine
 from mobitrade.learning.generator import CandidateGenerator
 from mobitrade.learning.evaluator import CandidateEvaluator
 from mobitrade.logging.audit import AuditLogger, AuditEventType
+from mobitrade.transport.redis_service import redis_service, RedisStreamName
 
 
 class SelfLearningEngine:
@@ -53,6 +54,17 @@ class SelfLearningEngine:
             self.repo._ensure_baseline_strategy()
             active_strat = self.repo.get_active_strategy()
 
+        redis_service.publish(
+            RedisStreamName.ACTIVITY,
+            {
+                "event_type": "LEARNING_STARTED",
+                "session_id": sess_id,
+                "active_strategy": active_strat.version_id,
+                "timestamp": now_str,
+            },
+            event_id=f"learn_start_{sess_id}",
+        )
+
         # Step 1: Update model performance profiles
         profiles = self.analysis_engine.build_model_profiles()
         for p in profiles:
@@ -72,6 +84,18 @@ class SelfLearningEngine:
                     "model_id": obs.model_id,
                 },
             )
+            redis_service.publish(
+                RedisStreamName.ACTIVITY,
+                {
+                    "event_type": "OBSERVATION_CREATED",
+                    "observation_id": obs.observation_id,
+                    "weakness_type": obs.weakness_type.value,
+                    "sample_size": obs.sample_size,
+                    "model_id": obs.model_id,
+                    "session_id": sess_id,
+                },
+                event_id=f"obs_{obs.observation_id}",
+            )
 
         # Step 3: Candidate Improvement Generation
         candidates = self.candidate_generator.generate_candidates(active_strat, observations)
@@ -87,6 +111,17 @@ class SelfLearningEngine:
                     "sample_size": cand.sample_size,
                 },
             )
+            redis_service.publish(
+                RedisStreamName.ACTIVITY,
+                {
+                    "event_type": "CANDIDATE_CREATED",
+                    "candidate_version_id": cand.version_id,
+                    "parent_version_id": cand.parent_version_id,
+                    "reason": cand.reason,
+                    "session_id": sess_id,
+                },
+                event_id=f"cand_create_{cand.version_id}",
+            )
 
         # Step 4: Replay Evaluation & Overfitting Validation
         validated_candidates: List[StrategyConfig] = []
@@ -96,6 +131,16 @@ class SelfLearningEngine:
         for cand in candidates:
             cand.status = CandidateStatus.TESTING
             self.repo.save_strategy(cand)
+            redis_service.publish(
+                RedisStreamName.ACTIVITY,
+                {
+                    "event_type": "CANDIDATE_TESTED",
+                    "candidate_version_id": cand.version_id,
+                    "status": "TESTING",
+                    "session_id": sess_id,
+                },
+                event_id=f"cand_test_{cand.version_id}",
+            )
 
             report = self.evaluator.evaluate(cand, active_strat)
             self.repo.save_validation_report(report)
@@ -113,6 +158,17 @@ class SelfLearningEngine:
                         "baseline_net_pnl": report.baseline_metrics.get("net_pnl"),
                     },
                 )
+                redis_service.publish(
+                    RedisStreamName.ACTIVITY,
+                    {
+                        "event_type": "CANDIDATE_VALIDATED",
+                        "candidate_version_id": cand.version_id,
+                        "candidate_net_pnl": report.candidate_metrics.get("net_pnl"),
+                        "baseline_net_pnl": report.baseline_metrics.get("net_pnl"),
+                        "session_id": sess_id,
+                    },
+                    event_id=f"cand_val_{cand.version_id}",
+                )
             else:
                 cand.status = CandidateStatus.REJECTED
                 rejected_candidates.append(cand)
@@ -123,6 +179,16 @@ class SelfLearningEngine:
                         "candidate_version_id": cand.version_id,
                         "rejection_reasons": report.rejection_reasons,
                     },
+                )
+                redis_service.publish(
+                    RedisStreamName.ACTIVITY,
+                    {
+                        "event_type": "CANDIDATE_REJECTED",
+                        "candidate_version_id": cand.version_id,
+                        "rejection_reasons": str(report.rejection_reasons),
+                        "session_id": sess_id,
+                    },
+                    event_id=f"cand_rej_{cand.version_id}",
                 )
             self.repo.save_strategy(cand)
 
@@ -145,6 +211,16 @@ class SelfLearningEngine:
                     "activated_version_id": best_cand.version_id,
                     "previous_active_version": active_strat.version_id,
                 },
+            )
+            redis_service.publish(
+                RedisStreamName.ACTIVITY,
+                {
+                    "event_type": "STRATEGY_ACTIVATED",
+                    "activated_version_id": best_cand.version_id,
+                    "previous_active_version": active_strat.version_id,
+                    "session_id": sess_id,
+                },
+                event_id=f"strat_act_{best_cand.version_id}",
             )
 
         current_active = self.repo.get_active_strategy()

@@ -101,6 +101,12 @@ export const TopStatusBar: React.FC<TopStatusBarProps> = ({
           <span>Risk Engine Active</span>
         </div>
 
+        {/* Redis Fast Pipeline Capsule */}
+        <div className="glass-pill px-3 py-1.5 rounded-full flex items-center gap-2 text-xs font-medium text-gray-200">
+          <span className="w-2 h-2 rounded-full bg-rose-400 shadow-sm shadow-rose-400/80 animate-pulse" />
+          <span>Redis Fast Pipeline</span>
+        </div>
+
         {/* NSE Market Open Capsule */}
         <div className="glass-pill px-3 py-1.5 rounded-full flex items-center gap-2 text-xs font-medium text-gray-200">
           <span className={`w-2 h-2 rounded-full ${isMarketOpen ? 'bg-emerald-400 shadow-sm shadow-emerald-400/80 animate-pulse' : 'bg-amber-400'}`} />

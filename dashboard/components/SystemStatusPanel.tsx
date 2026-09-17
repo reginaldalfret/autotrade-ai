@@ -22,13 +22,20 @@ export const SystemStatusPanel: React.FC<SystemStatusPanelProps> = ({
         </h3>
       </div>
 
-      {/* 4 Status Pills Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+      {/* 5 Status Pills Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
         {/* API */}
         <div className="glass-panel-subtle rounded-xl p-3 flex flex-col items-center text-center">
           <span className="w-2 h-2 rounded-full bg-emerald-400 mb-1.5 shadow-sm shadow-emerald-400" />
           <div className="text-[11px] font-bold text-white">API</div>
           <div className="text-[9px] text-emerald-400 font-mono mt-0.5">Online</div>
+        </div>
+
+        {/* Redis Pipeline */}
+        <div className="glass-panel-subtle rounded-xl p-3 flex flex-col items-center text-center">
+          <span className="w-2 h-2 rounded-full bg-rose-400 mb-1.5 shadow-sm shadow-rose-400" />
+          <div className="text-[11px] font-bold text-white">Redis Streams</div>
+          <div className="text-[9px] text-rose-300 font-mono mt-0.5">5 Streams</div>
         </div>
 
         {/* Ollama */}
@@ -48,8 +55,8 @@ export const SystemStatusPanel: React.FC<SystemStatusPanelProps> = ({
         {/* Database */}
         <div className="glass-panel-subtle rounded-xl p-3 flex flex-col items-center text-center">
           <span className="w-2 h-2 rounded-full bg-cyan-400 mb-1.5 shadow-sm shadow-cyan-400" />
-          <div className="text-[11px] font-bold text-white">Database</div>
-          <div className="text-[9px] text-cyan-400 font-mono mt-0.5">Connected</div>
+          <div className="text-[11px] font-bold text-white">SQLite</div>
+          <div className="text-[9px] text-cyan-400 font-mono mt-0.5">Durable DB</div>
         </div>
       </div>
     </div>

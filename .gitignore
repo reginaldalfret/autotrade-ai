@@ -25,6 +25,8 @@ htmlcov/
 # Logs & Databases
 logs/
 *.log
+*.rdb
+dump.rdb
 database/*.db
 database/*.sqlite
 database/*.sqlite3
